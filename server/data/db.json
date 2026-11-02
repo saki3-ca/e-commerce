@@ -1,0 +1,326 @@
+{
+  "settings": {
+    "shopName": "Masfeeh",
+    "tagline": "Accessorize Your World",
+    "slogan": "Little Things... Big Happiness ♡",
+    "ownerEmail": "maishamonsura@gmail.com",
+    "ownerPhone": "01303-662891",
+    "address": "Bashundhara R/A, Dhaka, Bangladesh",
+    "currency": "৳",
+    "shippingDhaka": 70,
+    "shippingOutsideDhaka": 130,
+    "smtpHost": "",
+    "smtpPort": 587,
+    "smtpUser": "",
+    "smtpPass": "",
+    "smtpSecure": false,
+    "senderName": "Masfeeh Online Shop",
+    "facebookUrl": "https://www.facebook.com/profile.php?id=61596179578624",
+    "instagramUrl": ""
+  },
+  "products": [
+    {
+      "id": "prod-1793647152080-757",
+      "createdAt": "2026-11-02T19:19:12.080Z",
+      "name": "Rose Gold Crown Crystal Handbag",
+      "category": "Bags",
+      "price": 2150,
+      "originalPrice": 2650,
+      "stock": 8,
+      "badge": "Limited Edition",
+      "image": "/assets/lookbook_4_handbag.jpg",
+      "images": [
+        "/assets/lookbook_4_handbag.jpg",
+        "/assets/brand_artwork.jpg"
+      ],
+      "description": "Exquisite handcrafted evening handbag with crystal encrusted crown clasp and dual gold chains.",
+      "features": [
+        "Detachable long gold chain strap and short wrist strap",
+        "Jeweled crown clasp with micro-crystals",
+        "Rich velvet interior lining with card pockets"
+      ]
+    },
+    {
+      "id": "prod-1",
+      "name": "Premium Crossbody Bag - FIOM Monogram",
+      "category": "Bags",
+      "price": 1850,
+      "originalPrice": 2350,
+      "stock": 15,
+      "badge": "Bestseller",
+      "image": "/assets/lookbook_1_fiom.jpg",
+      "images": [
+        "/assets/lookbook_1_fiom.jpg",
+        "/assets/bag_video_clean.jpg"
+      ],
+      "description": "Premium Cross body bag with both long and short belt. Features our signature FIOM monogram textured finish, high-grade gold-tone hardware, and versatile styling.",
+      "features": [
+        "Includes 2 detachable straps (Adjustable Long Shoulder Strap + Chic Short Hand Belt)",
+        "Dual smooth glide gold zipper compartments",
+        "High-density scratch resistant vegan leather",
+        "Dimensions: 21cm x 13cm x 8cm"
+      ],
+      "createdAt": "2026-11-01T10:00:00.000Z"
+    },
+    {
+      "id": "prod-2",
+      "name": "Signature Floral Clover Monogram Crossbody",
+      "category": "Bags",
+      "price": 1950,
+      "originalPrice": 2450,
+      "stock": 12,
+      "badge": "New Arrival",
+      "image": "/assets/lookbook_2_clover.jpg",
+      "images": [
+        "/assets/lookbook_2_clover.jpg",
+        "/assets/bag_clover.jpg"
+      ],
+      "description": "Elegant monogram floral clover pattern with luxury champagne gold accents. Comes with dual belts for shoulder or handbag wear.",
+      "features": [
+        "Comes with both long crossbody belt and short handle belt",
+        "Reinforced structured corners for timeless durability",
+        "Interior slip pocket and zip partition",
+        "Dimensions: 22cm x 14cm x 8cm"
+      ],
+      "createdAt": "2026-11-01T11:00:00.000Z"
+    },
+    {
+      "id": "prod-3",
+      "name": "Timeless Chocolate Ribbed Leather Crossbody",
+      "category": "Bags",
+      "price": 1750,
+      "originalPrice": 2150,
+      "stock": 18,
+      "badge": "Trending",
+      "image": "/assets/lookbook_3_chocolate.jpg",
+      "images": [
+        "/assets/lookbook_3_chocolate.jpg",
+        "/assets/bag_brown_solid.jpg"
+      ],
+      "description": "Rich chocolate brown minimal crossbody bag with ribbed edge trim and golden hardware. Pairs effortlessly with both ethnic and western attire.",
+      "features": [
+        "Includes long crossbody belt and wrist/handlet strap",
+        "Water-resistant textured PU leather",
+        "Golden pull tabs and magnetic snap closure"
+      ],
+      "createdAt": "2026-11-01T12:00:00.000Z"
+    },
+    {
+      "id": "prod-4",
+      "name": "Royal Monogram Golden Crest Crossbody",
+      "category": "Bags",
+      "price": 1890,
+      "originalPrice": 2390,
+      "stock": 10,
+      "badge": "Featured",
+      "image": "/assets/lookbook_5_gold_crest.jpg",
+      "images": [
+        "/assets/lookbook_5_gold_crest.jpg",
+        "/assets/bag_monogram_gold.jpg"
+      ],
+      "description": "Exclusive golden deer emblem on monogram leather. Comes with long adjustable belt and short hand strap for modern versatility.",
+      "features": [
+        "Dual strap set included (long belt + short strap)",
+        "Golden metallic deer logo plaque",
+        "Multiple compartments with luxury lining"
+      ],
+      "createdAt": "2026-11-01T13:00:00.000Z"
+    },
+    {
+      "id": "prod-5",
+      "name": "Dainty Pearl & Crystal Hair Bow Set",
+      "category": "Hair Accessories",
+      "price": 450,
+      "originalPrice": 650,
+      "stock": 25,
+      "badge": "Popular",
+      "image": "/assets/photo_grid_0_0.jpg",
+      "images": [
+        "/assets/photo_grid_0_0.jpg"
+      ],
+      "description": "Intricately handcrafted pearl and crystal embellished hair clips and bow set. High-grip teeth that stay secure without pulling.",
+      "features": [
+        "Hypoallergenic metal clip",
+        "Hand-strung faux freshwater pearls",
+        "Set includes 3 matching luxury hair accents"
+      ],
+      "createdAt": "2026-11-01T14:00:00.000Z"
+    },
+    {
+      "id": "prod-6",
+      "name": "Velvet Rose Gold Royal Bangles Collection",
+      "category": "Bangles & More",
+      "price": 1250,
+      "originalPrice": 1650,
+      "stock": 8,
+      "badge": "Bestseller",
+      "image": "/assets/brand_artwork.jpg",
+      "images": [
+        "/assets/brand_artwork.jpg"
+      ],
+      "description": "Traditional royal craftsmanship with soft velvet texture, golden thread work, and glistening stones. Perfect for festivals, parties, and weddings.",
+      "features": [
+        "Set of 24 pieces (12 per hand)",
+        "Sizes available: 2.4, 2.6, 2.8",
+        "Non-tarnish golden alloy and velvet finish"
+      ],
+      "createdAt": "2026-11-01T15:00:00.000Z"
+    },
+    {
+      "id": "prod-7",
+      "name": "Salon Gel French Ombre Luxury Press-on Nails",
+      "category": "Fake Nails",
+      "price": 520,
+      "originalPrice": 750,
+      "stock": 30,
+      "badge": "Trending",
+      "image": "/assets/photo_grid_1_1.jpg",
+      "images": [
+        "/assets/photo_grid_1_1.jpg"
+      ],
+      "description": "High-gloss salon finish medium almond press-on nails. Reusable up to 5 times with gentle removal.",
+      "features": [
+        "24 nails in 12 universal sizes",
+        "Includes nail glue, adhesive jelly tabs, mini file & cuticle stick",
+        "Wear time: 2-3 weeks with glue, 3-5 days with tabs"
+      ],
+      "createdAt": "2026-11-01T16:00:00.000Z"
+    },
+    {
+      "id": "prod-8",
+      "name": "18K Gold Plated Stackable Zirconia Rings (Set of 5)",
+      "category": "Rings",
+      "price": 680,
+      "originalPrice": 950,
+      "stock": 20,
+      "badge": "New",
+      "image": "/assets/photo_grid_2_1.jpg",
+      "images": [
+        "/assets/photo_grid_2_1.jpg"
+      ],
+      "description": "Minimalist dainty gold ring stack with micro-pave zirconia stones. Adjustable open band design fits most finger sizes.",
+      "features": [
+        "18K gold electroplating for lasting luster",
+        "Hypoallergenic & nickel-free",
+        "Mix and match stacking styles"
+      ],
+      "createdAt": "2026-11-01T17:00:00.000Z"
+    }
+  ],
+  "orders": [
+    {
+      "id": "MSF-92814",
+      "createdAt": "2026-11-02T19:18:22.042Z",
+      "status": "Accepted",
+      "paymentStatus": "Pending (COD)",
+      "trackingCode": "TRK-92814",
+      "courier": "Steadfast Express",
+      "timeline": [
+        {
+          "status": "Order Placed",
+          "timestamp": "2026-11-02T19:18:22.042Z",
+          "note": "Order placed by customer via Masfeeh online shop."
+        },
+        {
+          "status": "Accepted",
+          "timestamp": "2026-11-02T19:18:37.362Z",
+          "note": "Order approved by Masfeeh owner. Packaging started."
+        }
+      ],
+      "customer": {
+        "city": "Inside Dhaka",
+        "name": "Sadia Jahan",
+        "phone": "01711-223344",
+        "notes": "Deliver after 4 PM",
+        "email": "sadia.jahan@example.com",
+        "address": "House 28, Road 3, Block C, Bashundhara R/A"
+      },
+      "items": [
+        {
+          "price": 1850,
+          "quantity": 1,
+          "name": "Premium Crossbody Bag - FIOM Monogram",
+          "id": "prod-1",
+          "image": "/assets/bag_fiom.jpg"
+        }
+      ],
+      "subtotal": 1850,
+      "shipping": 70,
+      "discount": 0,
+      "total": 1920,
+      "paymentMethod": "Cash on Delivery"
+    },
+    {
+      "id": "MSF-10021",
+      "customer": {
+        "name": "Sadia Rahman",
+        "email": "sadia.rahman.test@gmail.com",
+        "phone": "01712-345678",
+        "address": "House 14, Road 5, Block B, Bashundhara R/A",
+        "city": "Inside Dhaka",
+        "notes": "Please call before delivery"
+      },
+      "items": [
+        {
+          "id": "prod-1",
+          "name": "Premium Crossbody Bag - FIOM Monogram",
+          "price": 1850,
+          "quantity": 1,
+          "image": "/assets/bag_fiom.jpg"
+        }
+      ],
+      "subtotal": 1850,
+      "shipping": 70,
+      "discount": 0,
+      "total": 1920,
+      "paymentMethod": "Cash on Delivery",
+      "paymentStatus": "Pending",
+      "status": "Pending",
+      "trackingCode": "MSF-TRK-771",
+      "courier": "Steadfast Courier",
+      "timeline": [
+        {
+          "status": "Order Placed",
+          "timestamp": "2026-11-02T18:30:00.000Z",
+          "note": "Order successfully received from customer"
+        }
+      ],
+      "createdAt": "2026-11-02T18:30:00.000Z"
+    }
+  ],
+  "emails": [
+    {
+      "id": "email-1793647117363-158",
+      "timestamp": "2026-11-02T19:18:37.363Z",
+      "to": "sadia.jahan@example.com",
+      "subject": "[Masfeeh] 🎉 Great News! Your Order #MSF-92814 Has Been Accepted & Is Being Prepared!",
+      "html": "\n      <!DOCTYPE html>\n      <html>\n      <head>\n        <meta charset=\"utf-8\">\n        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n        <style>\n          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #faf7f5; margin: 0; padding: 0; color: #332d2b; }\n          .container { max-width: 620px; margin: 25px auto; background: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #f0e6e0; }\n          .header { background: linear-gradient(135deg, #1f1d1d 0%, #362923 100%); padding: 32px 20px; text-align: center; color: #ffffff; }\n          .brand-title { font-size: 32px; letter-spacing: 2px; font-family: 'Playfair Display', Georgia, serif; margin: 0; color: #d4af37; font-weight: 700; }\n          .brand-subtitle { font-size: 11px; letter-spacing: 3px; color: #e6c89c; text-transform: uppercase; margin-top: 6px; }\n          .content { padding: 32px 28px; line-height: 1.6; }\n          .order-card { background: #faf5f0; border: 1px solid #ecdcd3; border-radius: 10px; padding: 20px; margin: 20px 0; }\n          .table { width: 100%; border-collapse: collapse; margin-top: 15px; }\n          .table th { text-align: left; padding: 10px; border-bottom: 2px solid #ecdcd3; font-size: 12px; text-transform: uppercase; color: #7d6b63; }\n          .table td { padding: 12px 10px; border-bottom: 1px solid #f0e6e0; font-size: 14px; }\n          .badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }\n          .badge-gold { background: #fdf2d0; color: #855c0e; border: 1px solid #e7c768; }\n          .badge-green { background: #e6f9ed; color: #166534; border: 1px solid #86efac; }\n          .btn { display: inline-block; padding: 14px 28px; background: #1f1d1d; color: #d4af37 !important; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; letter-spacing: 0.5px; border: 1px solid #d4af37; }\n          .footer { background: #fdfaf8; padding: 24px; text-align: center; font-size: 12px; color: #8c7f79; border-top: 1px solid #f0e6e0; }\n          .preheader { display: none; max-height: 0px; overflow: hidden; }\n        </style>\n      </head>\n      <body>\n        <span class=\"preheader\">Your Masfeeh order #MSF-92814 has been accepted!</span>\n        <div class=\"container\">\n          <div class=\"header\">\n            <div style=\"font-size: 24px; margin-bottom: 4px;\">👑</div>\n            <h1 class=\"brand-title\">Masfeeh</h1>\n            <div class=\"brand-subtitle\">Accessorize Your World</div>\n          </div>\n          <div class=\"content\">\n            \n      <div style=\"text-align: center; margin-bottom: 25px;\">\n        <span class=\"badge badge-green\">Order Accepted & Processing</span>\n        <h2 style=\"margin: 12px 0 6px 0; font-size: 24px; color: #1f1d1d; font-family: 'Playfair Display', Georgia, serif;\">Your Order Has Been Accepted! ✨</h2>\n        <p style=\"color: #4b3e39; margin: 0; font-size: 15px;\">Dear <strong>Sadia Jahan</strong>, Masfeeh has accepted your order and our packaging team is preparing your package with love and care!</p>\n      </div>\n\n      <div class=\"order-card\" style=\"border-left: 4px solid #16a34a;\">\n        <table style=\"width: 100%;\">\n          <tr>\n            <td style=\"padding: 6px 0;\"><strong>Order ID:</strong></td>\n            <td style=\"text-align: right; font-weight: 700; color: #1f1d1d;\">#MSF-92814</td>\n          </tr>\n          <tr>\n            <td style=\"padding: 6px 0;\"><strong>Current Status:</strong></td>\n            <td style=\"text-align: right;\"><span class=\"badge badge-green\">Accepted / Packaging</span></td>\n          </tr>\n          <tr>\n            <td style=\"padding: 6px 0;\"><strong>Courier Partner:</strong></td>\n            <td style=\"text-align: right; font-weight: 600;\">Steadfast Express</td>\n          </tr>\n          <tr>\n            <td style=\"padding: 6px 0;\"><strong>Tracking Reference:</strong></td>\n            <td style=\"text-align: right; font-family: monospace; font-size: 14px; font-weight: 700; color: #9c6c0e;\">TRK-92814</td>\n          </tr>\n          <tr>\n            <td style=\"padding: 6px 0;\"><strong>Total Due:</strong></td>\n            <td style=\"text-align: right; font-weight: 700; font-size: 16px; color: #1f1d1d;\">৳1,920 (Cash on Delivery)</td>\n          </tr>\n        </table>\n      </div>\n\n      <div style=\"margin: 20px 0;\">\n        <h4 style=\"margin: 0 0 10px 0; color: #362923; font-size: 15px;\">📦 Items in This Package:</h4>\n        <ul style=\"padding-left: 20px; color: #524742; line-height: 1.6;\">\n          \n      <li style=\"margin-bottom: 6px;\">\n        <strong>Premium Crossbody Bag - FIOM Monogram</strong> x 1 (৳1,850)\n      </li>\n    \n        </ul>\n      </div>\n\n      <div style=\"background: #fcf9f2; border: 1px dashed #d9b897; border-radius: 8px; padding: 18px; margin: 25px 0; text-align: center;\">\n        <h4 style=\"margin: 0 0 6px 0; color: #7a540d;\">🚚 Estimated Delivery Timeline</h4>\n        <p style=\"margin: 0; font-size: 13px; color: #5c4b3f;\">\n          <strong>Inside Dhaka:</strong> 24 to 48 Hours<br>\n          <strong>Outside Dhaka:</strong> 2 to 3 Business Days\n        </p>\n        <p style=\"margin: 8px 0 0 0; font-size: 12px; color: #8c7365;\">The delivery agent will call you at <strong>01711-223344</strong> before arriving.</p>\n      </div>\n\n      <div style=\"text-align: center; margin-top: 30px;\">\n        <p style=\"font-size: 13px; color: #7a6e69; margin-bottom: 12px;\">Questions about your order? Message us directly on WhatsApp at <strong>01303-662891</strong>.</p>\n      </div>\n    \n          </div>\n          <div class=\"footer\">\n            <p style=\"margin: 0 0 6px 0; font-weight: 600; color: #524742;\">Masfeeh • Little Things... Big Happiness ♡</p>\n            <p style=\"margin: 0 0 4px 0;\">📍 Bashundhara R/A, Dhaka, Bangladesh</p>\n            <p style=\"margin: 0;\">📞 Hotline / WhatsApp: 01303-662891 • ✉️ maishamonsura@gmail.com</p>\n          </div>\n        </div>\n      </body>\n      </html>\n    ",
+      "type": "CUSTOMER_ORDER_ACCEPTED",
+      "orderId": "MSF-92814",
+      "status": "Delivered (Simulated)",
+      "errorDetail": null
+    },
+    {
+      "id": "email-1793647102179-448",
+      "timestamp": "2026-11-02T19:18:22.179Z",
+      "to": "sadia.jahan@example.com",
+      "subject": "[Masfeeh] Order Received #MSF-92814 - Little Things... Big Happiness ♡",
+      "html": "\n      <!DOCTYPE html>\n      <html>\n      <head>\n        <meta charset=\"utf-8\">\n        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n        <style>\n          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #faf7f5; margin: 0; padding: 0; color: #332d2b; }\n          .container { max-width: 620px; margin: 25px auto; background: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #f0e6e0; }\n          .header { background: linear-gradient(135deg, #1f1d1d 0%, #362923 100%); padding: 32px 20px; text-align: center; color: #ffffff; }\n          .brand-title { font-size: 32px; letter-spacing: 2px; font-family: 'Playfair Display', Georgia, serif; margin: 0; color: #d4af37; font-weight: 700; }\n          .brand-subtitle { font-size: 11px; letter-spacing: 3px; color: #e6c89c; text-transform: uppercase; margin-top: 6px; }\n          .content { padding: 32px 28px; line-height: 1.6; }\n          .order-card { background: #faf5f0; border: 1px solid #ecdcd3; border-radius: 10px; padding: 20px; margin: 20px 0; }\n          .table { width: 100%; border-collapse: collapse; margin-top: 15px; }\n          .table th { text-align: left; padding: 10px; border-bottom: 2px solid #ecdcd3; font-size: 12px; text-transform: uppercase; color: #7d6b63; }\n          .table td { padding: 12px 10px; border-bottom: 1px solid #f0e6e0; font-size: 14px; }\n          .badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }\n          .badge-gold { background: #fdf2d0; color: #855c0e; border: 1px solid #e7c768; }\n          .badge-green { background: #e6f9ed; color: #166534; border: 1px solid #86efac; }\n          .btn { display: inline-block; padding: 14px 28px; background: #1f1d1d; color: #d4af37 !important; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; letter-spacing: 0.5px; border: 1px solid #d4af37; }\n          .footer { background: #fdfaf8; padding: 24px; text-align: center; font-size: 12px; color: #8c7f79; border-top: 1px solid #f0e6e0; }\n          .preheader { display: none; max-height: 0px; overflow: hidden; }\n        </style>\n      </head>\n      <body>\n        <span class=\"preheader\">Thank you for your order #MSF-92814 at Masfeeh</span>\n        <div class=\"container\">\n          <div class=\"header\">\n            <div style=\"font-size: 24px; margin-bottom: 4px;\">👑</div>\n            <h1 class=\"brand-title\">Masfeeh</h1>\n            <div class=\"brand-subtitle\">Accessorize Your World</div>\n          </div>\n          <div class=\"content\">\n            \n      <div style=\"text-align: center; margin-bottom: 25px;\">\n        <span class=\"badge badge-gold\">Order Confirmed</span>\n        <h2 style=\"margin: 10px 0 4px 0; font-size: 22px; color: #1f1d1d;\">Thank You For Choosing Masfeeh! ✨</h2>\n        <p style=\"color: #6d625d; margin: 0; font-size: 14px;\">We have received your order <strong>#MSF-92814</strong>. We will review and accept it shortly!</p>\n      </div>\n\n      <div class=\"order-card\">\n        <h3 style=\"margin-top: 0; font-size: 15px; color: #423530; margin-bottom: 8px;\">📍 Shipping Information</h3>\n        <p style=\"margin: 3px 0;\"><strong>Recipient:</strong> Sadia Jahan</p>\n        <p style=\"margin: 3px 0;\"><strong>Contact Phone:</strong> 01711-223344</p>\n        <p style=\"margin: 3px 0;\"><strong>Delivery Address:</strong> House 28, Road 3, Block C, Bashundhara R/A, Inside Dhaka</p>\n      </div>\n\n      <table class=\"table\">\n        <thead>\n          <tr>\n            <th>Item</th>\n            <th style=\"text-align: center;\">Qty</th>\n            <th style=\"text-align: right;\">Total</th>\n          </tr>\n        </thead>\n        <tbody>\n          \n      <tr>\n        <td style=\"font-weight: 600;\">Premium Crossbody Bag - FIOM Monogram</td>\n        <td style=\"text-align: center;\">1</td>\n        <td style=\"text-align: right; font-weight: 600;\">৳1,850</td>\n      </tr>\n    \n        </tbody>\n      </table>\n\n      <div style=\"background: #faf5f0; border-radius: 8px; padding: 15px; margin-top: 15px;\">\n        <table style=\"width: 100%; font-size: 14px;\">\n          <tr>\n            <td style=\"padding: 4px 0;\">Subtotal:</td>\n            <td style=\"text-align: right; font-weight: 600;\">৳1,850</td>\n          </tr>\n          <tr>\n            <td style=\"padding: 4px 0;\">Delivery Charge:</td>\n            <td style=\"text-align: right;\">৳70</td>\n          </tr>\n          <tr style=\"border-top: 2px solid #ecdcd3; font-size: 16px;\">\n            <td style=\"padding: 8px 0; font-weight: 700; color: #1f1d1d;\">Total Payable:</td>\n            <td style=\"text-align: right; font-weight: 700; color: #9c6c0e; font-size: 18px;\">৳1,920</td>\n          </tr>\n          <tr>\n            <td style=\"padding: 4px 0; color: #6b5c54;\">Payment Method:</td>\n            <td style=\"text-align: right; font-weight: 600;\">Cash on Delivery</td>\n          </tr>\n        </table>\n      </div>\n\n      <div style=\"text-align: center; margin-top: 30px;\">\n        <p style=\"font-size: 14px; color: #665952; margin-bottom: 12px;\">You can track your order status live at any time using Order ID: <strong>#MSF-92814</strong></p>\n        <div style=\"padding: 10px; background: #fff5e6; border-radius: 6px; display: inline-block; font-size: 13px; color: #805b11; border: 1px solid #ffd899;\">\n          🔔 You will receive another notification as soon as we accept your order!\n        </div>\n      </div>\n    \n          </div>\n          <div class=\"footer\">\n            <p style=\"margin: 0 0 6px 0; font-weight: 600; color: #524742;\">Masfeeh • Little Things... Big Happiness ♡</p>\n            <p style=\"margin: 0 0 4px 0;\">📍 Bashundhara R/A, Dhaka, Bangladesh</p>\n            <p style=\"margin: 0;\">📞 Hotline / WhatsApp: 01303-662891 • ✉️ maishamonsura@gmail.com</p>\n          </div>\n        </div>\n      </body>\n      </html>\n    ",
+      "type": "CUSTOMER_ORDER_CONFIRMATION",
+      "orderId": "MSF-92814",
+      "status": "Delivered (Simulated)",
+      "errorDetail": null
+    },
+    {
+      "id": "email-1793647102177-646",
+      "timestamp": "2026-11-02T19:18:22.177Z",
+      "to": "maishamonsura@gmail.com",
+      "subject": "[Masfeeh] 🛍️ New Order #MSF-92814 Received - ৳1,920 from Sadia Jahan",
+      "html": "\n      <!DOCTYPE html>\n      <html>\n      <head>\n        <meta charset=\"utf-8\">\n        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n        <style>\n          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #faf7f5; margin: 0; padding: 0; color: #332d2b; }\n          .container { max-width: 620px; margin: 25px auto; background: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #f0e6e0; }\n          .header { background: linear-gradient(135deg, #1f1d1d 0%, #362923 100%); padding: 32px 20px; text-align: center; color: #ffffff; }\n          .brand-title { font-size: 32px; letter-spacing: 2px; font-family: 'Playfair Display', Georgia, serif; margin: 0; color: #d4af37; font-weight: 700; }\n          .brand-subtitle { font-size: 11px; letter-spacing: 3px; color: #e6c89c; text-transform: uppercase; margin-top: 6px; }\n          .content { padding: 32px 28px; line-height: 1.6; }\n          .order-card { background: #faf5f0; border: 1px solid #ecdcd3; border-radius: 10px; padding: 20px; margin: 20px 0; }\n          .table { width: 100%; border-collapse: collapse; margin-top: 15px; }\n          .table th { text-align: left; padding: 10px; border-bottom: 2px solid #ecdcd3; font-size: 12px; text-transform: uppercase; color: #7d6b63; }\n          .table td { padding: 12px 10px; border-bottom: 1px solid #f0e6e0; font-size: 14px; }\n          .badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }\n          .badge-gold { background: #fdf2d0; color: #855c0e; border: 1px solid #e7c768; }\n          .badge-green { background: #e6f9ed; color: #166534; border: 1px solid #86efac; }\n          .btn { display: inline-block; padding: 14px 28px; background: #1f1d1d; color: #d4af37 !important; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; letter-spacing: 0.5px; border: 1px solid #d4af37; }\n          .footer { background: #fdfaf8; padding: 24px; text-align: center; font-size: 12px; color: #8c7f79; border-top: 1px solid #f0e6e0; }\n          .preheader { display: none; max-height: 0px; overflow: hidden; }\n        </style>\n      </head>\n      <body>\n        <span class=\"preheader\">New order #MSF-92814 placed by Sadia Jahan</span>\n        <div class=\"container\">\n          <div class=\"header\">\n            <div style=\"font-size: 24px; margin-bottom: 4px;\">👑</div>\n            <h1 class=\"brand-title\">Masfeeh</h1>\n            <div class=\"brand-subtitle\">Accessorize Your World</div>\n          </div>\n          <div class=\"content\">\n            \n      <div style=\"text-align: center; margin-bottom: 20px;\">\n        <span class=\"badge badge-gold\">New Order Alert</span>\n        <h2 style=\"margin: 10px 0 4px 0; font-size: 22px; color: #1f1d1d;\">You Have a New Customer Order!</h2>\n        <p style=\"color: #6d625d; margin: 0; font-size: 14px;\">Order ID: <strong>#MSF-92814</strong> • Placed: 11/3/2026, 1:18:22 AM</p>\n      </div>\n\n      <div class=\"order-card\">\n        <h3 style=\"margin-top: 0; font-size: 16px; color: #423530; border-bottom: 1px solid #e2d2c8; padding-bottom: 8px;\">👤 Customer Information</h3>\n        <p style=\"margin: 4px 0;\"><strong>Name:</strong> Sadia Jahan</p>\n        <p style=\"margin: 4px 0;\"><strong>Phone:</strong> <a href=\"tel:01711-223344\" style=\"color: #b07e15; font-weight: 700;\">01711-223344</a></p>\n        <p style=\"margin: 4px 0;\"><strong>Email:</strong> <a href=\"mailto:sadia.jahan@example.com\">sadia.jahan@example.com</a></p>\n        <p style=\"margin: 4px 0;\"><strong>Delivery Address:</strong> House 28, Road 3, Block C, Bashundhara R/A</p>\n        <p style=\"margin: 4px 0;\"><strong>Region:</strong> Inside Dhaka</p>\n        <p style=\"margin: 4px 0; background: #fff; padding: 8px; border-radius: 6px; border: 1px dashed #d1b8ab;\"><strong>Special Instructions:</strong> Deliver after 4 PM</p>\n      </div>\n\n      <h3 style=\"font-size: 16px; margin: 20px 0 10px 0; color: #362a24;\">📦 Ordered Items</h3>\n      <table class=\"table\">\n        <thead>\n          <tr>\n            <th>Item</th>\n            <th style=\"text-align: center;\">Qty</th>\n            <th style=\"text-align: right;\">Price</th>\n            <th style=\"text-align: right;\">Total</th>\n          </tr>\n        </thead>\n        <tbody>\n          \n      <tr>\n        <td style=\"font-weight: 600;\">Premium Crossbody Bag - FIOM Monogram</td>\n        <td style=\"text-align: center;\">1</td>\n        <td style=\"text-align: right;\">৳1,850</td>\n        <td style=\"text-align: right; font-weight: 600;\">৳1,850</td>\n      </tr>\n    \n        </tbody>\n      </table>\n\n      <div style=\"background: #faf5f0; border-radius: 8px; padding: 15px; margin-top: 15px;\">\n        <table style=\"width: 100%; font-size: 14px;\">\n          <tr>\n            <td style=\"padding: 4px 0;\">Subtotal:</td>\n            <td style=\"text-align: right; font-weight: 600;\">৳1,850</td>\n          </tr>\n          <tr>\n            <td style=\"padding: 4px 0;\">Delivery Charge:</td>\n            <td style=\"text-align: right;\">৳70</td>\n          </tr>\n          \n          <tr style=\"border-top: 2px solid #ecdcd3; font-size: 16px;\">\n            <td style=\"padding: 8px 0; font-weight: 700; color: #1f1d1d;\">Total Payable:</td>\n            <td style=\"text-align: right; font-weight: 700; color: #9c6c0e; font-size: 18px;\">৳1,920</td>\n          </tr>\n          <tr>\n            <td style=\"padding: 4px 0; color: #6b5c54;\">Payment Method:</td>\n            <td style=\"text-align: right; font-weight: 600;\">Cash on Delivery</td>\n          </tr>\n        </table>\n      </div>\n\n      <div style=\"text-align: center; margin-top: 30px;\">\n        <p style=\"font-size: 14px; color: #665952; margin-bottom: 15px;\">Log in to the Admin Dashboard to review and accept this order.</p>\n        <span class=\"btn\">Review Order #MSF-92814 in Admin</span>\n      </div>\n    \n          </div>\n          <div class=\"footer\">\n            <p style=\"margin: 0 0 6px 0; font-weight: 600; color: #524742;\">Masfeeh • Little Things... Big Happiness ♡</p>\n            <p style=\"margin: 0 0 4px 0;\">📍 Bashundhara R/A, Dhaka, Bangladesh</p>\n            <p style=\"margin: 0;\">📞 Hotline / WhatsApp: 01303-662891 • ✉️ maishamonsura@gmail.com</p>\n          </div>\n        </div>\n      </body>\n      </html>\n    ",
+      "type": "OWNER_NEW_ORDER",
+      "orderId": "MSF-92814",
+      "status": "Delivered (Simulated)",
+      "errorDetail": null
+    }
+  ]
+}
