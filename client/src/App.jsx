@@ -7,6 +7,7 @@ import CartDrawer from './components/CartDrawer';
 import CheckoutModal from './components/CheckoutModal';
 import OrderTrackingModal from './components/OrderTrackingModal';
 import AdminDashboard from './components/AdminDashboard';
+import MobileBottomNav from './components/MobileBottomNav';
 import Footer from './components/Footer';
 import { api } from './services/api';
 import { Sparkles, SlidersHorizontal, Check, ShoppingBag, ArrowUpRight } from 'lucide-react';
@@ -25,6 +26,7 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState('featured');
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   // Modals & Drawers
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -169,11 +171,19 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#faf7f5] text-[#2c2420]">
-      {/* Toast Notification */}
+      {/* Toast Notification (Mobile Safe Positioning) */}
       {toastMessage && (
-        <div className="fixed top-20 right-6 z-50 bg-[#1f1d1d] text-[#e6c89c] px-4 py-3 rounded-xl shadow-2xl border border-[#d4af37] text-xs flex items-center gap-2 animate-in slide-in-from-top-4">
-          <Sparkles className="w-4 h-4 text-[#d4af37]" />
-          <span>{toastMessage}</span>
+        <div className="fixed top-3 inset-x-3 sm:inset-x-auto sm:right-6 sm:top-20 z-50 bg-[#1f1d1d] text-[#e6c89c] px-4 py-2.5 rounded-xl shadow-2xl border border-[#d4af37] text-xs flex items-center justify-between sm:justify-start gap-2 animate-in slide-in-from-top-4 max-w-sm mx-auto">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-[#d4af37] shrink-0" />
+            <span className="font-medium">{toastMessage}</span>
+          </div>
+          <button 
+            onClick={() => setToastMessage('')}
+            className="text-stone-400 hover:text-white text-xs px-1"
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -191,10 +201,12 @@ export default function App() {
         isAdmin={isAdmin}
         setIsAdmin={setIsAdmin}
         settings={settings}
+        mobileSearchOpen={mobileSearchOpen}
+        setMobileSearchOpen={setMobileSearchOpen}
       />
 
       {/* Main Content Area */}
-      <main className="flex-1">
+      <main className="flex-1 pb-16 md:pb-0">
         {/* Hero Section */}
         {selectedCategory === 'All' && !searchQuery && (
           <Hero 
@@ -204,24 +216,24 @@ export default function App() {
         )}
 
         {/* Product Catalog Section */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <section className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
           {/* Section Header & Sorters */}
-          <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4 pb-6 border-b border-[#ebdcd3]">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-3 sm:gap-4 pb-4 sm:pb-6 border-b border-[#ebdcd3]">
             <div>
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#997316]">
+              <div className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#997316]">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Boutique Catalog</span>
               </div>
-              <h2 className="font-serif-luxury text-2xl sm:text-3xl font-bold text-[#231b17] mt-0.5">
+              <h2 className="font-serif-luxury text-xl sm:text-3xl font-bold text-[#231b17] mt-0.5">
                 {selectedCategory === 'All' ? 'Signature Collection' : `${selectedCategory}`}
               </h2>
-              <p className="text-xs text-stone-500 mt-1">
+              <p className="text-[11px] sm:text-xs text-stone-500 mt-0.5 sm:mt-1">
                 Showing {filteredProducts.length} premium accessories from Masfeeh.
               </p>
             </div>
 
             {/* Sorter Selector */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between sm:justify-start gap-2">
               <span className="text-xs text-stone-500 flex items-center gap-1">
                 <SlidersHorizontal className="w-3.5 h-3.5" />
                 <span>Sort:</span>
@@ -241,7 +253,7 @@ export default function App() {
 
           {/* Product Grid */}
           {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 py-12">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-6 py-12">
               {[...Array(8)].map((_, i) => (
                 <div key={i} className="animate-pulse bg-stone-200/60 rounded-xl aspect-square"></div>
               ))}
@@ -261,7 +273,7 @@ export default function App() {
               </button>
             </div>
           ) : (
-            <div className="mt-6 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className="mt-4 sm:mt-6 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-6">
               {filteredProducts.map((prod) => (
                 <ProductCard
                   key={prod.id}
@@ -281,6 +293,27 @@ export default function App() {
         onOpenTrack={() => setIsTrackOpen(true)}
         onToggleAdmin={() => setIsAdmin(true)}
         settings={settings}
+      />
+
+      {/* Dynamic Mobile Bottom Navigation Bar (md:hidden) */}
+      <MobileBottomNav
+        cartCount={cartCount}
+        onOpenCart={() => setIsCartOpen(true)}
+        onOpenTrack={() => setIsTrackOpen(true)}
+        onOpenSearch={() => {
+          setMobileSearchOpen(prev => !prev);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onGoHome={() => {
+          setSelectedCategory('All');
+          setSearchQuery('');
+          setIsAdmin(false);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        selectedCategory={selectedCategory}
+        searchQuery={searchQuery}
+        isAdmin={isAdmin}
+        setIsAdmin={setIsAdmin}
       />
 
       {/* Product Details Modal */}

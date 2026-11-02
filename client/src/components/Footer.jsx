@@ -4,7 +4,7 @@ import BrandLogo from './BrandLogo';
 
 export default function Footer({ onSelectCategory, onOpenTrack, onToggleAdmin, settings }) {
   return (
-    <footer className="bg-[#1a1716] text-[#ded6cf] pt-14 pb-8 border-t border-[#332a24]">
+    <footer className="bg-[#1a1716] text-[#ded6cf] pt-10 sm:pt-14 pb-24 sm:pb-8 border-t border-[#332a24]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-12 border-b border-stone-800">
           {/* Brand Info */}

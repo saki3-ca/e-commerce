@@ -102,11 +102,13 @@ export default function CheckoutModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div 
-        className="relative bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-[#ebdcd3] overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200"
+        className="relative bg-white w-full max-w-2xl rounded-t-3xl sm:rounded-2xl shadow-2xl border border-[#ebdcd3] max-h-[94vh] sm:max-h-[90vh] overflow-y-auto my-0 sm:my-8 animate-in slide-in-from-bottom sm:zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Mobile Drag Handle */}
+        <div className="sm:hidden w-12 h-1.5 bg-stone-300 rounded-full mx-auto my-2 shrink-0" />
         {/* Modal Header */}
         <div className="p-5 border-b border-[#ebdcd3] bg-[#faf6f2] flex items-center justify-between">
           <div className="flex items-center gap-2">
