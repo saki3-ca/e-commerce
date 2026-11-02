@@ -1,5 +1,6 @@
 import React from 'react';
 import { Phone, Mail, MapPin, Heart, ShieldCheck, Sparkles, Truck, PackageCheck, UserCheck } from 'lucide-react';
+import BrandLogo from './BrandLogo';
 
 export default function Footer({ onSelectCategory, onOpenTrack, onToggleAdmin, settings }) {
   return (
@@ -8,19 +9,7 @@ export default function Footer({ onSelectCategory, onOpenTrack, onToggleAdmin, s
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-12 border-b border-stone-800">
           {/* Brand Info */}
           <div className="space-y-4 md:col-span-1">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full p-0.5 bg-gradient-to-tr from-[#c59b27] to-[#e6c89c] shadow-xs">
-                <img src="/assets/avatar.jpg" alt="Masfeeh" className="w-full h-full object-cover rounded-full" />
-              </div>
-              <div>
-                <span className="font-serif-luxury text-2xl font-bold tracking-wider text-[#faf5ee]">
-                  Masfeeh
-                </span>
-                <p className="text-[10px] tracking-[0.2em] uppercase font-semibold text-[#c59b27]">
-                  Accessorize Your World
-                </p>
-              </div>
-            </div>
+            <BrandLogo variant="dark" size="md" />
 
             <p className="text-xs text-stone-400 leading-relaxed font-light">
               "We believe in premium, authentic & timeless beauty. Every detail matters. Every choice reflects elegance."

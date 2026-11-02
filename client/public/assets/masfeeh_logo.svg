@@ -1,0 +1,29 @@
+<svg viewBox="0 0 48 48" width="48" height="48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#faecd0" />
+      <stop offset="25%" stop-color="#dfb256" />
+      <stop offset="65%" stop-color="#b8831e" />
+      <stop offset="100%" stop-color="#875b0a" />
+    </linearGradient>
+    <linearGradient id="sheen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.22" />
+      <stop offset="60%" stop-color="#000000" stop-opacity="0" />
+    </linearGradient>
+    <radialGradient id="obsidian" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#2b2521" />
+      <stop offset="100%" stop-color="#120f0e" />
+    </radialGradient>
+  </defs>
+  <circle cx="24" cy="24" r="23" fill="url(#obsidian)" />
+  <circle cx="24" cy="24" r="23" fill="url(#sheen)" />
+  <circle cx="24" cy="24" r="22" stroke="url(#gold)" stroke-width="1.2" />
+  <circle cx="24" cy="24" r="19.5" stroke="url(#gold)" stroke-width="0.6" stroke-opacity="0.45" stroke-dasharray="1.2 1.6" />
+  <path d="M15.5 19.8L18.8 14.2L24 17.5L29.2 14.2L32.5 19.8C32.5 21.2 30.2 21.8 24 21.8C17.8 21.8 15.5 21.2 15.5 19.8Z" fill="url(#gold)" />
+  <circle cx="18.8" cy="13.7" r="1.1" fill="#fff7e6" stroke="#997316" stroke-width="0.4" />
+  <circle cx="24" cy="16.3" r="1.3" fill="#fff7e6" stroke="#997316" stroke-width="0.4" />
+  <circle cx="29.2" cy="13.7" r="1.1" fill="#fff7e6" stroke="#997316" stroke-width="0.4" />
+  <path d="M24 8L24.6 11.2L27.5 11.8L24.6 12.4L24 15.5L23.4 12.4L20.5 11.8L23.4 11.2Z" fill="url(#gold)" />
+  <circle cx="24" cy="11.8" r="0.6" fill="#ffffff" />
+  <text x="24" y="35" font-family="'Playfair Display', Georgia, serif" font-size="14.5" font-weight="700" fill="url(#gold)" text-anchor="middle" letter-spacing="0.02em">M</text>
+</svg>

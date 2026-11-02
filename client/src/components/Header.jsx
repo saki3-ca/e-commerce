@@ -1,5 +1,6 @@
 import React from 'react';
 import { ShoppingBag, Search, Compass, ShieldCheck, Phone, MapPin, Sparkles, UserCheck, PackageCheck } from 'lucide-react';
+import BrandLogo from './BrandLogo';
 
 export default function Header({
   cartCount,
@@ -78,32 +79,10 @@ export default function Header({
         {/* Brand Logo & Tagline */}
         <div 
           onClick={() => { setIsAdmin(false); setActiveTab('shop'); }}
-          className="flex items-center gap-3 cursor-pointer group select-none"
+          className="cursor-pointer"
+          title="Masfeeh - Accessorize Your World"
         >
-          <div className="relative w-11 h-11 rounded-full p-0.5 bg-gradient-to-tr from-[#c59b27] via-[#f7e0a0] to-[#b07e15] shadow-xs">
-            <img 
-              src="/assets/avatar.jpg" 
-              alt="Masfeeh Logo" 
-              className="w-full h-full object-cover rounded-full"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = '/assets/banner.jpg';
-              }}
-            />
-            <div className="absolute -top-1.5 -right-1.5 bg-[#1f1d1d] text-[#d4af37] text-[10px] rounded-full p-0.5 border border-[#d4af37]">
-              👑
-            </div>
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-serif-luxury text-2xl font-bold tracking-wider text-[#26201e] group-hover:text-[#997316] transition-colors">
-                Masfeeh
-              </span>
-            </div>
-            <p className="text-[10px] tracking-[0.22em] uppercase font-semibold text-[#8c7365]">
-              Accessorize Your World
-            </p>
-          </div>
+          <BrandLogo size="md" variant="default" />
         </div>
 
         {/* Search Bar (Customer Storefront View) */}

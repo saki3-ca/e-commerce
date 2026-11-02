@@ -6,6 +6,7 @@ import {
   Sparkles, Check, ChevronRight
 } from 'lucide-react';
 import { api } from '../services/api';
+import BrandLogo from './BrandLogo';
 
 export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSettings }) {
   const [activeTab, setActiveTab] = useState('orders'); // orders, products, add-product, emails, settings
@@ -240,9 +241,7 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
       <div className="bg-[#1f1d1d] text-white border-b border-stone-800 px-4 sm:px-6 py-3.5 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#c59b27] to-[#e6c89c] p-0.5 shadow-xs">
-              <img src="/assets/avatar.jpg" alt="" className="w-full h-full rounded-full object-cover" />
-            </div>
+            <BrandLogo variant="iconOnly" size="sm" />
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="font-serif-luxury text-lg font-bold text-[#faf5ee]">

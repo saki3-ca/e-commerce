@@ -7,6 +7,7 @@ const fs = require('fs');
 
 const store = require('./data/store');
 const emailService = require('./services/emailService');
+const supabaseService = require('./services/supabase');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -51,6 +52,17 @@ if (fs.existsSync(clientDist)) {
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', brand: 'Masfeeh', timestamp: new Date().toISOString() });
+});
+
+// Supabase status check
+app.get('/api/supabase/status', async (req, res) => {
+  res.json({
+    configured: supabaseService.isConfigured(),
+    urlConfigured: Boolean(process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('your-project')),
+    message: supabaseService.isConfigured() 
+      ? 'Supabase is connected and ready!' 
+      : 'Supabase credentials not configured in .env (Using high-speed local store)'
+  });
 });
 
 // ---------------- PRODUCTS APIS ---------------- //
@@ -254,6 +266,13 @@ app.post('/api/orders', async (req, res) => {
     if (customer.email) {
       emailService.sendOrderConfirmationToCustomer(newOrder).catch(err => {
         console.error('Failed to send order confirmation to customer:', err);
+      });
+    }
+
+    // 3. Sync to Supabase if configured
+    if (supabaseService.isConfigured()) {
+      supabaseService.addOrder(newOrder).catch(err => {
+        console.error('Failed to sync order to Supabase:', err);
       });
     }
 
