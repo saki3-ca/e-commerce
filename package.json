@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "Masfeeh - Accessorize Your World E-commerce Platform",
   "main": "server/index.js",
+  "workspaces": [
+    "client",
+    "server"
+  ],
   "scripts": {
     "start": "node server/index.js",
     "server": "node server/index.js",
