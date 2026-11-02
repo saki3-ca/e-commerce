@@ -353,16 +353,33 @@ app.post('/api/quote', h(async (req, res) => {
   res.json(await pricing.quote({ items, city, coupon }));
 }));
 
-// Best-effort per-IP throttle on order placement (in-memory: per server instance)
+// Best-effort throttle on order placement (in-memory, per server instance).
+// Client IP comes only from headers the hosting platform sets itself (Vercel overwrites these),
+// never from the client-controlled left side of X-Forwarded-For. Also limited per phone number.
+const ORDER_WINDOW_MS = 10 * 60 * 1000;
 const orderAttempts = new Map();
-function orderRateLimited(req) {
-  const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
-  const now = Date.now();
-  const recent = (orderAttempts.get(ip) || []).filter(t => now - t < 10 * 60 * 1000);
+function clientIp(req) {
+  return String(req.headers['x-vercel-forwarded-for'] || req.headers['x-real-ip'] || req.socket.remoteAddress || 'unknown')
+    .split(',')[0].trim();
+}
+function hit(key, limit, now) {
+  const recent = (orderAttempts.get(key) || []).filter(t => now - t < ORDER_WINDOW_MS);
   recent.push(now);
-  orderAttempts.set(ip, recent);
-  if (orderAttempts.size > 5000) orderAttempts.clear();
-  return recent.length > 5;
+  orderAttempts.set(key, recent);
+  return recent.length > limit;
+}
+function orderRateLimited(req) {
+  const now = Date.now();
+  // Evict expired keys instead of wiping everything (wiping would reset every limit)
+  if (orderAttempts.size > 5000) {
+    for (const [k, times] of orderAttempts) {
+      if (!times.length || now - times[times.length - 1] >= ORDER_WINDOW_MS) orderAttempts.delete(k);
+    }
+  }
+  const phone = String((req.body && req.body.customer && req.body.customer.phone) || '').replace(/\D/g, '');
+  const ipLimited = hit(`ip:${clientIp(req)}`, 5, now);
+  const phoneLimited = phone ? hit(`phone:${phone}`, 3, now) : false;
+  return ipLimited || phoneLimited;
 }
 
 // Place order: guests or signed-in customers. Prices are computed here, never trusted from the browser.
