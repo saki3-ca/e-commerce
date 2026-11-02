@@ -1,6 +1,12 @@
 // Supabase-backed data store. All methods are async.
 // Requires SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (server-side secret key).
+const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
+
+// 8-char code without look-alike characters (0/O, 1/I/L): ~10^12 combinations, not guessable
+const CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+const randomCode = (len = 8) =>
+  Array.from(crypto.randomBytes(len), b => CODE_ALPHABET[b % CODE_ALPHABET.length]).join('');
 const DEFAULTS = require('./defaults');
 
 const IMAGE_BUCKET = 'product-images';
@@ -162,7 +168,7 @@ class Store {
   async addOrder(order) {
     const now = new Date().toISOString();
     for (let attempt = 0; attempt < 5; attempt++) {
-      const orderNumber = Math.floor(10000 + Math.random() * 90000);
+      const orderNumber = randomCode();
       const newOrder = {
         id: `MSF-${orderNumber}`,
         createdAt: now,
@@ -230,7 +236,7 @@ class Store {
   }
 
   async getAdminById(id) {
-    return check(await this.db.from('admin_users').select('id, email, name, role').eq('id', id).maybeSingle());
+    return check(await this.db.from('admin_users').select('id, email, name, role, password_hash').eq('id', id).maybeSingle());
   }
 
   async updateAdminPassword(id, passwordHash) {

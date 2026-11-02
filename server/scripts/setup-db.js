@@ -5,13 +5,14 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const { Client } = require('pg');
+const dbSsl = require('./db-ssl');
 const DEFAULTS = require('../data/defaults');
 
 async function main() {
   const connectionString = process.env.DATABASE_URL || process.env.DATABASE_URL_DIRECT;
   if (!connectionString) throw new Error('Set DATABASE_URL in server/.env');
 
-  const db = new Client({ connectionString, ssl: { rejectUnauthorized: false } });
+  const db = new Client({ connectionString, ssl: dbSsl() });
   await db.connect();
 
   const schema = fs.readFileSync(path.join(__dirname, '../../supabase_schema.sql'), 'utf8');

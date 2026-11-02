@@ -1203,9 +1203,12 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
             </div>
 
             <div className="p-4 max-h-[75vh] overflow-y-auto bg-[#faf7f5]">
-              <div 
-                className="bg-white rounded-xl shadow-xs overflow-hidden"
-                dangerouslySetInnerHTML={{ __html: previewEmail.html }} 
+              {/* Sandboxed: email HTML contains customer-entered text, never run it in the admin page */}
+              <iframe
+                title="Email preview"
+                sandbox=""
+                srcDoc={previewEmail.html}
+                className="w-full h-[65vh] bg-white rounded-xl shadow-xs border-0"
               />
             </div>
           </div>

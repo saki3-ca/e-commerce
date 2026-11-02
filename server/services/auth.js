@@ -27,8 +27,14 @@ function verifyPassword(password, stored) {
 
 const b64url = buf => Buffer.from(buf).toString('base64url');
 
+// Fingerprint of the current password hash: changing the password invalidates old tokens
+const pwFingerprint = passwordHash =>
+  crypto.createHmac('sha256', secret()).update(String(passwordHash)).digest('base64url').slice(0, 16);
+
 function signToken(user) {
-  const payload = b64url(JSON.stringify({ sub: user.id, role: user.role, exp: Date.now() + TOKEN_TTL_MS }));
+  const payload = b64url(JSON.stringify({
+    sub: user.id, role: user.role, pwv: pwFingerprint(user.password_hash), exp: Date.now() + TOKEN_TTL_MS
+  }));
   const sig = b64url(crypto.createHmac('sha256', secret()).update(payload).digest());
   return `${payload}.${sig}`;
 }
@@ -51,7 +57,10 @@ async function getUserFromRequest(req) {
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
   const claims = verifyToken(token);
   if (!claims) return null;
-  return store.getAdminById(claims.sub); // null if the account was removed
+  const user = await store.getAdminById(claims.sub); // null if the account was removed
+  if (!user || claims.pwv !== pwFingerprint(user.password_hash)) return null;
+  const { password_hash, ...safeUser } = user; // eslint-disable-line no-unused-vars
+  return safeUser;
 }
 
 // Express middleware: rejects requests without a valid owner/admin session

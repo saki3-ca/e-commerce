@@ -1,6 +1,19 @@
 const nodemailer = require('nodemailer');
 const store = require('../data/store');
 
+// Customer-entered text goes into HTML emails (and the admin preview): escape it all.
+const escapeHtml = str => String(str)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+function escapeDeep(value) {
+  if (typeof value === 'string') return escapeHtml(value);
+  if (Array.isArray(value)) return value.map(escapeDeep);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, escapeDeep(v)]));
+  }
+  return value;
+}
+
 class EmailService {
   getTransporter() {
     const settings = this.settings || {};
@@ -70,6 +83,7 @@ class EmailService {
 
   // 1. EMAIL TO OWNER: On new customer order
   async sendNewOrderAlertToOwner(order) {
+    order = escapeDeep(order);
     const settings = this.settings = await store.getSettings();
     const recipient = settings.ownerEmail || 'maishamonsura@gmail.com';
     const subject = `[Masfeeh] 🛍️ New Order #${order.id} Received - ৳${order.total.toLocaleString()} from ${order.customer.name}`;
@@ -155,8 +169,10 @@ class EmailService {
 
   // 2. EMAIL TO CUSTOMER: Order Confirmation receipt
   async sendOrderConfirmationToCustomer(order) {
+    const rawEmail = order.customer && order.customer.email;
+    order = escapeDeep(order);
     this.settings = await store.getSettings();
-    const recipient = order.customer.email;
+    const recipient = rawEmail;
     if (!recipient) return null;
 
     const subject = `[Masfeeh] Order Received #${order.id} - Little Things... Big Happiness ♡`;
@@ -237,8 +253,10 @@ class EmailService {
 
   // 3. EMAIL TO CUSTOMER: When Owner ACCEPTS the order! (Key user requirement)
   async sendOrderAcceptedNotificationToCustomer(order) {
+    const rawEmail = order.customer && order.customer.email;
+    order = escapeDeep(order);
     this.settings = await store.getSettings();
-    const recipient = order.customer.email;
+    const recipient = rawEmail;
     if (!recipient) return null;
 
     const subject = `[Masfeeh] 🎉 Great News! Your Order #${order.id} Has Been Accepted & Is Being Prepared!`;

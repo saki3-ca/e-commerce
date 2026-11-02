@@ -39,6 +39,42 @@ const PUBLIC_SETTING_KEYS = [
   'shippingDhaka', 'shippingOutsideDhaka', 'facebookUrl', 'instagramUrl'
 ];
 
+// What an anonymous visitor may see when tracking an order (no full address/phone/email)
+function publicOrderView(order) {
+  const c = order.customer || {};
+  const parts = String(c.name || '').trim().split(/\s+/);
+  const phone = String(c.phone || '');
+  return {
+    ...order,
+    customer: {
+      name: parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]}.` : parts[0],
+      phone: phone.length > 6 ? `${phone.slice(0, 3)}•••••${phone.slice(-3)}` : '•••',
+      address: 'Hidden for privacy',
+      city: c.city
+    }
+  };
+}
+
+const str = (v, max) => typeof v === 'string' && v.trim().length > 0 && v.length <= max;
+
+function validateOrderInput({ customer, items }) {
+  if (!customer || !str(customer.name, 100) || !str(customer.phone, 30) || !str(customer.address, 500)) {
+    return 'Customer name, phone, and address are required';
+  }
+  if (customer.email && !/^[^\s@<>"']{1,64}@[^\s@<>"']{1,190}\.[a-zA-Z]{2,}$/.test(customer.email)) {
+    return 'Please enter a valid email address';
+  }
+  for (const k of ['city', 'notes']) {
+    if (customer[k] !== undefined && (typeof customer[k] !== 'string' || customer[k].length > 500)) {
+      return `Invalid ${k}`;
+    }
+  }
+  if (!Array.isArray(items) || items.length === 0 || items.length > 50) {
+    return 'Order must contain at least 1 item';
+  }
+  return null;
+}
+
 function parseFeatures(features) {
   if (!features) return [];
   if (Array.isArray(features)) return features;
@@ -81,8 +117,10 @@ app.post('/api/auth/change-password', auth.requireAdmin, h(async (req, res) => {
   if (!auth.verifyPassword(currentPassword || '', user.password_hash)) {
     return res.status(401).json({ error: 'Current password is wrong' });
   }
-  await store.updateAdminPassword(user.id, auth.hashPassword(newPassword));
-  res.json({ success: true });
+  const passwordHash = auth.hashPassword(newPassword);
+  await store.updateAdminPassword(user.id, passwordHash);
+  // Old sessions (incl. this one) are now invalid: hand back a fresh token
+  res.json({ success: true, token: auth.signToken({ ...user, password_hash: passwordHash }) });
 }));
 
 // ---------------- PRODUCTS (read: public, write: admin) ---------------- //
@@ -203,23 +241,20 @@ app.get('/api/orders', auth.requireAdmin, h(async (req, res) => {
   res.json(orders);
 }));
 
-// Single order lookup: public (customer order tracking by order ID or phone)
+// Single order lookup: public tracking by order ID or phone (redacted unless logged in)
 app.get('/api/orders/:id', h(async (req, res) => {
   const order = await store.getOrderById(req.params.id);
   if (!order) return res.status(404).json({ error: 'Order not found' });
-  res.json(order);
+  const user = await auth.getUserFromRequest(req).catch(() => null);
+  res.json(user ? order : publicOrderView(order));
 }));
 
 // Place order: public
 app.post('/api/orders', h(async (req, res) => {
   const { customer, items, subtotal, shipping, discount, total, paymentMethod } = req.body;
 
-  if (!customer || !customer.name || !customer.phone || !customer.address) {
-    return res.status(400).json({ error: 'Customer name, phone, and address are required' });
-  }
-  if (!items || items.length === 0) {
-    return res.status(400).json({ error: 'Order must contain at least 1 item' });
-  }
+  const invalid = validateOrderInput(req.body);
+  if (invalid) return res.status(400).json({ error: invalid });
 
   const newOrder = await store.addOrder({
     customer,
@@ -240,7 +275,7 @@ app.post('/api/orders', h(async (req, res) => {
 
   res.status(201).json({
     success: true,
-    order: newOrder,
+    order: newOrder, // the customer who just ordered sees their own full details
     message: 'Order placed successfully! Owner has been alerted via email.'
   });
 }));

@@ -5,6 +5,7 @@ const path = require('path');
 const crypto = require('crypto');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const { Client } = require('pg');
+const dbSsl = require('./db-ssl');
 const { hashPassword } = require('../services/auth');
 
 async function main() {
@@ -19,7 +20,7 @@ async function main() {
 
   const db = new Client({
     connectionString: process.env.DATABASE_URL || process.env.DATABASE_URL_DIRECT,
-    ssl: { rejectUnauthorized: false }
+    ssl: dbSsl()
   });
   await db.connect();
   await db.query(
