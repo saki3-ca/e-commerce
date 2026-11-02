@@ -63,22 +63,6 @@ export default function Footer({ onSelectCategory, onOpenTrack, onToggleAdmin, s
                   Bangles & Kada Sets
                 </button>
               </li>
-              <li>
-                <button onClick={() => onSelectCategory('Photos & Lookbook')} className="text-[#e6c89c] hover:text-[#d4af37] transition-colors cursor-pointer font-semibold flex items-center gap-1.5">
-                  <span>📸 Photos & Lookbook</span>
-                </button>
-              </li>
-              <li className="pt-1">
-                <a 
-                  href="https://www.facebook.com/people/Masfeeh/61596179578624/?sk=photos"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="hover:text-[#1877f2] transition-colors flex items-center gap-1 text-[11px]"
-                >
-                  <span>Facebook Photos Gallery</span>
-                  <span>↗</span>
-                </a>
-              </li>
             </ul>
           </div>
 

@@ -203,92 +203,76 @@ export default function App() {
           />
         )}
 
-        {/* Dedicated Lookbook View if Photos & Lookbook tab clicked */}
-        {selectedCategory === 'Photos & Lookbook' ? (
-          <LookbookGallery 
-            products={products}
-            onSelectProduct={(p) => setSelectedProduct(p)}
-          />
-        ) : (
-          /* Product Catalog Section */
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-            {/* Section Header & Sorters */}
-            <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4 pb-6 border-b border-[#ebdcd3]">
-              <div>
-                <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#997316]">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Boutique Catalog</span>
-                </div>
-                <h2 className="font-serif-luxury text-2xl sm:text-3xl font-bold text-[#231b17] mt-0.5">
-                  {selectedCategory === 'All' ? 'Signature Collection' : `${selectedCategory}`}
-                </h2>
-                <p className="text-xs text-stone-500 mt-1">
-                  Showing {filteredProducts.length} premium accessories from Masfeeh.
-                </p>
+        {/* Product Catalog Section */}
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+          {/* Section Header & Sorters */}
+          <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4 pb-6 border-b border-[#ebdcd3]">
+            <div>
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#997316]">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Boutique Catalog</span>
               </div>
-
-              {/* Sorter Selector */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-stone-500 flex items-center gap-1">
-                  <SlidersHorizontal className="w-3.5 h-3.5" />
-                  <span>Sort:</span>
-                </span>
-                <select
-                  value={sortOption}
-                  onChange={(e) => setSortOption(e.target.value)}
-                  className="px-3 py-1.5 text-xs bg-white border border-[#ebdcd3] rounded-lg focus:outline-none focus:border-[#c59b27] text-stone-800"
-                >
-                  <option value="featured">Featured Collection</option>
-                  <option value="price-low">Price: Low to High</option>
-                  <option value="price-high">Price: High to Low</option>
-                  <option value="newest">Newest Arrivals</option>
-                </select>
-              </div>
+              <h2 className="font-serif-luxury text-2xl sm:text-3xl font-bold text-[#231b17] mt-0.5">
+                {selectedCategory === 'All' ? 'Signature Collection' : `${selectedCategory}`}
+              </h2>
+              <p className="text-xs text-stone-500 mt-1">
+                Showing {filteredProducts.length} premium accessories from Masfeeh.
+              </p>
             </div>
 
-            {/* Product Grid */}
-            {loading ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 py-12">
-                {[...Array(8)].map((_, i) => (
-                  <div key={i} className="animate-pulse bg-stone-200/60 rounded-xl aspect-square"></div>
-                ))}
-              </div>
-            ) : filteredProducts.length === 0 ? (
-              <div className="text-center py-16 text-stone-500">
-                <ShoppingBag className="w-12 h-12 mx-auto mb-3 text-stone-300" />
-                <h3 className="font-serif-luxury text-lg font-semibold text-stone-800">No items found</h3>
-                <p className="text-xs text-stone-400 mt-1">
-                  Try selecting a different category or clearing your search term.
-                </p>
-                <button
-                  onClick={() => { setSelectedCategory('All'); setSearchQuery(''); }}
-                  className="mt-4 px-4 py-2 bg-[#1f1d1d] text-[#e6c89c] text-xs font-semibold rounded-full"
-                >
-                  Reset Filters
-                </button>
-              </div>
-            ) : (
-              <div className="mt-6 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-                {filteredProducts.map((prod) => (
-                  <ProductCard
-                    key={prod.id}
-                    product={prod}
-                    onSelectProduct={(p) => setSelectedProduct(p)}
-                    onAddToCart={(p) => handleAddToCart(p, 1)}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-        )}
+            {/* Sorter Selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-stone-500 flex items-center gap-1">
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>Sort:</span>
+              </span>
+              <select
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value)}
+                className="px-3 py-1.5 text-xs bg-white border border-[#ebdcd3] rounded-lg focus:outline-none focus:border-[#c59b27] text-stone-800"
+              >
+                <option value="featured">Featured Collection</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+                <option value="newest">Newest Arrivals</option>
+              </select>
+            </div>
+          </div>
 
-        {/* Also display Lookbook showcase on homepage below products */}
-        {selectedCategory === 'All' && !searchQuery && (
-          <LookbookGallery 
-            products={products}
-            onSelectProduct={(p) => setSelectedProduct(p)}
-          />
-        )}
+          {/* Product Grid */}
+          {loading ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 py-12">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="animate-pulse bg-stone-200/60 rounded-xl aspect-square"></div>
+              ))}
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="text-center py-16 text-stone-500">
+              <ShoppingBag className="w-12 h-12 mx-auto mb-3 text-stone-300" />
+              <h3 className="font-serif-luxury text-lg font-semibold text-stone-800">No items found</h3>
+              <p className="text-xs text-stone-400 mt-1">
+                Try selecting a different category or clearing your search term.
+              </p>
+              <button
+                onClick={() => { setSelectedCategory('All'); setSearchQuery(''); }}
+                className="mt-4 px-4 py-2 bg-[#1f1d1d] text-[#e6c89c] text-xs font-semibold rounded-full"
+              >
+                Reset Filters
+              </button>
+            </div>
+          ) : (
+            <div className="mt-6 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+              {filteredProducts.map((prod) => (
+                <ProductCard
+                  key={prod.id}
+                  product={prod}
+                  onSelectProduct={(p) => setSelectedProduct(p)}
+                  onAddToCart={(p) => handleAddToCart(p, 1)}
+                />
+              ))}
+            </div>
+          )}
+        </section>
       </main>
 
       {/* Footer */}
