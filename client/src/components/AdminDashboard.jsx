@@ -48,6 +48,8 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
     address: 'Bashundhara R/A, Dhaka, Bangladesh',
     shippingDhaka: 70,
     shippingOutsideDhaka: 130,
+    facebookUrl: 'https://www.facebook.com/profile.php?id=61596179578624',
+    instagramUrl: '',
     smtpHost: '',
     smtpPort: 587,
     smtpUser: '',
@@ -937,6 +939,35 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
                     onChange={(e) => setSettingsForm({ ...settingsForm, shippingOutsideDhaka: Number(e.target.value) })}
                     className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl"
                   />
+                </div>
+
+                {/* Social Media Links (Facebook & Instagram) */}
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">
+                    Official Facebook Page URL
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://www.facebook.com/profile.php?id=..."
+                    value={settingsForm.facebookUrl || ''}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, facebookUrl: e.target.value })}
+                    className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl"
+                  />
+                  <span className="text-[10px] text-stone-400">Current: https://www.facebook.com/profile.php?id=61596179578624</span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">
+                    Official Instagram Profile URL (Add anytime!)
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://www.instagram.com/masfeeh_official"
+                    value={settingsForm.instagramUrl || ''}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, instagramUrl: e.target.value })}
+                    className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl"
+                  />
+                  <span className="text-[10px] text-stone-400">When provided, the Instagram button automatically appears in the header and footer!</span>
                 </div>
               </div>
 
