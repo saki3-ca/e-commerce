@@ -23,7 +23,7 @@ export default function ProductCard({ product, onSelect, onQuickAdd, index = 0 }
         </button>
 
         {(product.badge || soldOut) && (
-          <span className="absolute left-3 top-3 bg-paper/90 px-2.5 py-1 label text-[9.5px] text-ink pointer-events-none">
+          <span className="absolute left-2 top-2 sm:left-3 sm:top-3 bg-paper/90 px-2 sm:px-2.5 py-1 label text-[8.5px] sm:text-[9.5px] text-ink pointer-events-none">
             {soldOut ? 'Sold out' : product.badge}
           </span>
         )}
@@ -39,13 +39,13 @@ export default function ProductCard({ product, onSelect, onQuickAdd, index = 0 }
         )}
       </div>
 
-      <div className="pt-4 flex items-start justify-between gap-3">
+      <div className="pt-3 sm:pt-4 flex items-start justify-between gap-2 sm:gap-3">
         <button onClick={() => onSelect(product)} className="text-left min-w-0">
           <p className="label text-[10px] text-muted">{product.category}</p>
-          <h3 className="mt-1.5 font-display text-[19px] leading-snug text-ink line-clamp-2">
+          <h3 className="mt-1 sm:mt-1.5 font-display text-[16px] sm:text-[19px] leading-snug text-ink line-clamp-2">
             {product.name}
           </h3>
-          <p className="mt-1.5 text-[14px] font-normal text-ink tabular-nums">
+          <p className="mt-1 sm:mt-1.5 text-[13px] sm:text-[14px] font-normal text-ink tabular-nums">
             {formatPrice(product.price)}
             {onSale && (
               <span className="ml-2 text-muted line-through font-light">{formatPrice(product.originalPrice)}</span>
@@ -56,7 +56,7 @@ export default function ProductCard({ product, onSelect, onQuickAdd, index = 0 }
           <button
             onClick={() => onQuickAdd(product)}
             aria-label={`Add ${product.name} to bag`}
-            className="md:hidden mt-5 shrink-0 w-9 h-9 border border-line flex items-center justify-center text-ink active:bg-sand"
+            className="md:hidden mt-4 shrink-0 w-8 h-8 border border-line flex items-center justify-center text-ink active:bg-sand"
           >
             <Plus className="w-4 h-4" strokeWidth={1.25} />
           </button>

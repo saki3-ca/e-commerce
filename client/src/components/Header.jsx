@@ -38,7 +38,7 @@ export default function Header({
       </div>
 
       <div className="border-b border-line">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 h-16 sm:h-20 grid grid-cols-[1fr_auto_1fr] items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 h-14 sm:h-16 grid grid-cols-[1fr_auto_1fr] items-center">
           {/* Left */}
           <div className="flex items-center gap-6">
             <button
@@ -102,7 +102,7 @@ export default function Header({
 
         {/* Categories */}
         <nav aria-label="Categories" className="border-t border-line/70">
-          <ul className="max-w-7xl mx-auto px-4 sm:px-8 h-11 flex items-center sm:justify-center gap-7 sm:gap-10 overflow-x-auto no-scrollbar">
+          <ul className="max-w-7xl mx-auto px-4 sm:px-8 h-10 flex items-center sm:justify-center gap-7 sm:gap-10 overflow-x-auto no-scrollbar">
             {categories.map(cat => {
               const active = selectedCategory === cat;
               return (
@@ -110,7 +110,7 @@ export default function Header({
                   <button
                     onClick={() => onSelectCategory(cat)}
                     aria-current={active ? 'page' : undefined}
-                    className={`label py-3 border-b transition-colors ${
+                    className={`label py-2.5 border-b transition-colors focus:outline-none focus-visible:text-ink ${
                       active ? 'text-ink border-ink' : 'text-muted border-transparent hover:text-ink'
                     }`}
                   >

@@ -48,7 +48,7 @@ function useFocusReturn(active, panelRef) {
     const t = setTimeout(() => panelRef.current && panelRef.current.focus(), 30);
     return () => {
       clearTimeout(t);
-      if (previous && previous.focus) previous.focus();
+      if (previous && previous.focus) previous.focus({ preventScroll: true, focusVisible: false });
     };
   }, [active, panelRef]);
 }

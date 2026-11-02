@@ -9,7 +9,7 @@ export default function BrandLogo({ variant = 'default', size = 'md', showTaglin
   const color = variant === 'dark' ? 'text-paper' : 'text-ink';
   const sizes = {
     sm: { word: 'text-[19px]', tag: 'text-[8px]', mono: 'w-8 h-8 text-lg' },
-    md: { word: 'text-[24px] sm:text-[28px]', tag: 'text-[9px]', mono: 'w-9 h-9 text-xl' },
+    md: { word: 'text-[22px] sm:text-[24px]', tag: 'text-[9px]', mono: 'w-9 h-9 text-xl' },
     lg: { word: 'text-[34px] sm:text-[44px]', tag: 'text-[10px]', mono: 'w-12 h-12 text-2xl' }
   }[size] || {};
 

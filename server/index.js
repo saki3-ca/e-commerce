@@ -354,32 +354,50 @@ app.post('/api/quote', h(async (req, res) => {
 }));
 
 // Best-effort throttle on order placement (in-memory, per server instance).
-// Client IP comes only from headers the hosting platform sets itself (Vercel overwrites these),
-// never from the client-controlled left side of X-Forwarded-For. Also limited per phone number.
+// - Client IP comes only from headers the hosting platform sets (never client-controlled X-Forwarded-For).
+// - Phone numbers only count once an order has really been placed, so nobody can lock out
+//   someone else's number by sending junk requests with it.
+// - The map has a hard size cap; expired entries are swept first, then the oldest keys are dropped.
 const ORDER_WINDOW_MS = 10 * 60 * 1000;
+const MAX_KEYS = 10000;
 const orderAttempts = new Map();
+
 function clientIp(req) {
   return String(req.headers['x-vercel-forwarded-for'] || req.headers['x-real-ip'] || req.socket.remoteAddress || 'unknown')
-    .split(',')[0].trim();
+    .split(',')[0].trim().slice(0, 64);
 }
-function hit(key, limit, now) {
-  const recent = (orderAttempts.get(key) || []).filter(t => now - t < ORDER_WINDOW_MS);
-  recent.push(now);
-  orderAttempts.set(key, recent);
-  return recent.length > limit;
+function phoneKey(phone) {
+  const digits = String(phone || '').replace(/\D/g, '');
+  return digits.length >= 10 && digits.length <= 15 ? `phone:${digits}` : null;
 }
-function orderRateLimited(req) {
-  const now = Date.now();
-  // Evict expired keys instead of wiping everything (wiping would reset every limit)
-  if (orderAttempts.size > 5000) {
+function recentHits(key, now) {
+  return (orderAttempts.get(key) || []).filter(t => now - t < ORDER_WINDOW_MS);
+}
+function record(key, now) {
+  const hits = recentHits(key, now);
+  hits.push(now);
+  orderAttempts.delete(key); // re-insert so Map order = least recently used first
+  orderAttempts.set(key, hits);
+  if (orderAttempts.size > MAX_KEYS) {
     for (const [k, times] of orderAttempts) {
       if (!times.length || now - times[times.length - 1] >= ORDER_WINDOW_MS) orderAttempts.delete(k);
     }
+    while (orderAttempts.size > MAX_KEYS) orderAttempts.delete(orderAttempts.keys().next().value);
   }
-  const phone = String((req.body && req.body.customer && req.body.customer.phone) || '').replace(/\D/g, '');
-  const ipLimited = hit(`ip:${clientIp(req)}`, 5, now);
-  const phoneLimited = phone ? hit(`phone:${phone}`, 3, now) : false;
-  return ipLimited || phoneLimited;
+}
+// Called on every order attempt: counts the IP, checks (but does not count) the phone
+function orderRateLimited(req) {
+  const now = Date.now();
+  const ipKey = `ip:${clientIp(req)}`;
+  if (recentHits(ipKey, now).length >= 5) return true;
+  record(ipKey, now);
+  const pk = phoneKey(req.body && req.body.customer && req.body.customer.phone);
+  return pk ? recentHits(pk, now).length >= 3 : false;
+}
+// Called only after an order was created
+function recordPlacedOrder(phone) {
+  const pk = phoneKey(phone);
+  if (pk) record(pk, Date.now());
 }
 
 // Place order: guests or signed-in customers. Prices are computed here, never trusted from the browser.
@@ -466,6 +484,7 @@ app.post('/api/orders', h(async (req, res) => {
   const results = await Promise.allSettled(emailJobs);
   results.filter(r => r.status === 'rejected').forEach(r => console.error('Order email failed:', r.reason));
 
+  recordPlacedOrder(newOrder.customer.phone);
   res.status(201).json({ success: true, order: newOrder });
 }));
 

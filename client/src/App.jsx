@@ -245,15 +245,15 @@ export default function App() {
       <main className="flex-1">
         {showHero && <Hero onShop={scrollToCollection} onShopCategory={chooseCategory} />}
 
-        <section id="collection" className="scroll-mt-40 max-w-7xl mx-auto w-full px-5 sm:px-8 pt-16 sm:pt-24 pb-24">
+        <section id="collection" className="scroll-mt-32 max-w-7xl mx-auto w-full px-4 sm:px-8 pt-10 sm:pt-20 pb-16 sm:pb-24">
           <div className="flex flex-col items-center text-center">
             <p className="label text-brass">{search ? 'Search' : 'Masfeeh'}</p>
-            <h2 className="mt-4 font-display text-[40px] sm:text-[52px] leading-none text-ink">
+            <h2 className="mt-3 sm:mt-4 font-display text-[34px] sm:text-[52px] leading-none text-ink">
               {search ? `“${search}”` : category === 'All' ? 'The Collection' : category}
             </h2>
           </div>
 
-          <div className="mt-12 flex items-center justify-between border-y border-line py-3">
+          <div className="mt-7 sm:mt-12 flex items-center justify-between border-y border-line py-2.5 sm:py-3">
             <p className="text-[13px] text-muted tabular-nums">
               {loading ? 'Loading' : `${visible.length} ${visible.length === 1 ? 'piece' : 'pieces'}`}
             </p>
@@ -271,7 +271,7 @@ export default function App() {
           </div>
 
           {loading ? (
-            <div className="mt-12 grid grid-cols-2 lg:grid-cols-3 gap-x-5 sm:gap-x-8 gap-y-14">
+            <div className="mt-12 grid grid-cols-2 lg:grid-cols-3 gap-x-3 sm:gap-x-8 gap-y-9 sm:gap-y-14">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i}>
                   <div className="aspect-square bg-sand animate-pulse" />
@@ -293,7 +293,7 @@ export default function App() {
               <button className="btn-outline mt-8" onClick={() => { setSearch(''); setCategory('All'); }}>View all pieces</button>
             </div>
           ) : (
-            <div className="mt-12 grid grid-cols-2 lg:grid-cols-3 gap-x-5 sm:gap-x-8 gap-y-14">
+            <div className="mt-12 grid grid-cols-2 lg:grid-cols-3 gap-x-3 sm:gap-x-8 gap-y-9 sm:gap-y-14">
               {visible.map((p, i) => (
                 <ProductCard key={p.id} product={p} index={i} onSelect={setSelected} onQuickAdd={prod => addToBag(prod, 1)} />
               ))}
@@ -303,9 +303,9 @@ export default function App() {
 
         {showHero && (
           <section className="border-t border-line bg-paper">
-            <div className="max-w-3xl mx-auto px-6 py-24 sm:py-32 text-center">
+            <div className="max-w-3xl mx-auto px-6 py-16 sm:py-32 text-center">
               <p className="label text-brass">The house</p>
-              <p className="mt-8 font-display text-[28px] sm:text-[36px] leading-[1.3] text-ink">
+              <p className="mt-6 sm:mt-8 font-display text-[24px] sm:text-[36px] leading-[1.3] text-ink">
                 We believe in premium, authentic and timeless beauty.{' '}
                 <em className="text-ink-soft">Every detail matters, every choice reflects elegance.</em>
               </p>
