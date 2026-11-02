@@ -19,7 +19,7 @@ export function normalize(lines) {
     const id = l && typeof l.id === 'string' ? l.id : null;
     const q = Math.floor(Number(l && l.quantity));
     if (!id || !(q > 0)) continue;
-    merged.set(id, Math.min(99, (merged.get(id) || 0) + q));
+    merged.set(id, Math.min(10, (merged.get(id) || 0) + q));
   }
   return [...merged].map(([id, quantity]) => ({ id, quantity }));
 }
@@ -43,7 +43,8 @@ export function useCart(account) {
     return () => clearTimeout(syncTimer.current);
   }, [lines, signedIn]);
 
-  const add = useCallback((id, quantity = 1, max = 99) => {
+  const add = useCallback((id, quantity = 1, stock = 10) => {
+    const max = Math.min(10, stock);
     setLines(prev => {
       const existing = prev.find(l => l.id === id);
       if (existing) {

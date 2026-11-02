@@ -353,8 +353,23 @@ app.post('/api/quote', h(async (req, res) => {
   res.json(await pricing.quote({ items, city, coupon }));
 }));
 
+// Best-effort per-IP throttle on order placement (in-memory: per server instance)
+const orderAttempts = new Map();
+function orderRateLimited(req) {
+  const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  const now = Date.now();
+  const recent = (orderAttempts.get(ip) || []).filter(t => now - t < 10 * 60 * 1000);
+  recent.push(now);
+  orderAttempts.set(ip, recent);
+  if (orderAttempts.size > 5000) orderAttempts.clear();
+  return recent.length > 5;
+}
+
 // Place order: guests or signed-in customers. Prices are computed here, never trusted from the browser.
 app.post('/api/orders', h(async (req, res) => {
+  if (orderRateLimited(req)) {
+    return res.status(429).json({ error: 'Too many orders from this connection. Please wait a few minutes or call us.' });
+  }
   const { customer, items, coupon, paymentMethod, trxId } = req.body || {};
 
   const invalid = validateOrderInput(req.body);
@@ -408,6 +423,8 @@ app.post('/api/orders', h(async (req, res) => {
       discount: q.discount,
       total: q.total,
       paymentMethod: method,
+      // Never trust the shopper: mobile payments stay unverified until staff confirm the TrxID
+      paymentStatus: paymentMethod === 'Mobile Banking' ? 'Awaiting verification' : 'Pending (COD)',
       customerId: account ? account.id : null
     });
   } catch (err) {

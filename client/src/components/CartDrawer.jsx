@@ -123,7 +123,7 @@ export default function CartDrawer({
                         size="sm"
                         value={quantity}
                         min={1}
-                        max={Math.max(1, product.stock)}
+                        max={Math.max(1, Math.min(10, product.stock))}
                         onChange={q => onSetQuantity(product.id, q)}
                       />
                       <button onClick={() => onRemove(product.id)} className="label text-[10px] text-muted hover:text-ink">

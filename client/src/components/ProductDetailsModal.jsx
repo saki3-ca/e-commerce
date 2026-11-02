@@ -26,7 +26,7 @@ export default function ProductDetailsModal({ product, inBag = 0, onClose, onAdd
 
   if (!product) return null;
 
-  const available = Math.max(0, product.stock - inBag);
+  const available = Math.max(0, Math.min(10, product.stock) - inBag);
   const soldOut = product.stock <= 0;
   const onSale = product.originalPrice && product.originalPrice > product.price;
 

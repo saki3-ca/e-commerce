@@ -2,6 +2,8 @@
 const store = require('../data/store');
 
 const AREAS = ['Inside Dhaka', 'Outside Dhaka'];
+// Cap per product per order so one request cannot tie up a whole product's stock
+const MAX_PER_ITEM = 10;
 
 function normalizeItems(items) {
   // Merge duplicate lines and keep only sane quantities
@@ -10,7 +12,7 @@ function normalizeItems(items) {
     const id = typeof it?.id === 'string' ? it.id : null;
     const qty = Math.floor(Number(it?.quantity));
     if (!id || !Number.isFinite(qty) || qty <= 0) continue;
-    merged.set(id, Math.min(99, (merged.get(id) || 0) + qty));
+    merged.set(id, Math.min(MAX_PER_ITEM, (merged.get(id) || 0) + qty));
   }
   return [...merged].map(([id, quantity]) => ({ id, quantity }));
 }
@@ -68,4 +70,4 @@ async function quote({ items, city, coupon }) {
   };
 }
 
-module.exports = { quote, normalizeItems, AREAS };
+module.exports = { quote, normalizeItems, AREAS, MAX_PER_ITEM };
