@@ -81,3 +81,57 @@ CREATE POLICY "Public can read products" ON public.products
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('product-images', 'product-images', true)
 ON CONFLICT (id) DO NOTHING;
+
+-- ==============================================================
+-- CUSTOMER ACCOUNTS (optional sign-up; guests can still check out)
+-- ==============================================================
+CREATE TABLE IF NOT EXISTS public.customers (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email         TEXT NOT NULL UNIQUE,
+    name          TEXT NOT NULL,
+    phone         TEXT,
+    address       TEXT,
+    city          TEXT,
+    cart          JSONB NOT NULL DEFAULT '[]'::jsonb,
+    password_hash TEXT NOT NULL,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS customer_id UUID
+    REFERENCES public.customers(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS orders_customer_id_idx ON public.orders (customer_id);
+
+-- ==============================================================
+-- STOCK: atomic reserve / release. items = [{"id": "...", "quantity": n}]
+-- reserve_stock fails (and changes nothing) if any item is short.
+-- ==============================================================
+CREATE OR REPLACE FUNCTION public.reserve_stock(items JSONB)
+RETURNS VOID LANGUAGE plpgsql SET search_path = public AS $$
+DECLARE it JSONB; ok BOOLEAN;
+BEGIN
+  FOR it IN SELECT * FROM jsonb_array_elements(items) LOOP
+    UPDATE products SET stock = stock - (it->>'quantity')::int
+     WHERE id = it->>'id' AND stock >= (it->>'quantity')::int
+    RETURNING true INTO ok;
+    IF ok IS NULL THEN
+      RAISE EXCEPTION 'OUT_OF_STOCK:%', it->>'id';
+    END IF;
+    ok := NULL;
+  END LOOP;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.release_stock(items JSONB)
+RETURNS VOID LANGUAGE plpgsql SET search_path = public AS $$
+DECLARE it JSONB;
+BEGIN
+  FOR it IN SELECT * FROM jsonb_array_elements(items) LOOP
+    UPDATE products SET stock = stock + (it->>'quantity')::int WHERE id = it->>'id';
+  END LOOP;
+END $$;
+
+-- Only the server (service role) may call these
+REVOKE ALL ON FUNCTION public.reserve_stock(JSONB) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.release_stock(JSONB) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.reserve_stock(JSONB) TO service_role;
+GRANT EXECUTE ON FUNCTION public.release_stock(JSONB) TO service_role;

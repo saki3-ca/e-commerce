@@ -78,6 +78,7 @@ function orderFromRow(r) {
     trackingCode: r.tracking_code,
     courier: r.courier,
     timeline: r.timeline || [],
+    customerId: r.customer_id || null,
     createdAt: r.created_at
   };
 }
@@ -97,6 +98,7 @@ function orderToRow(o) {
     tracking_code: o.trackingCode,
     courier: o.courier,
     timeline: o.timeline,
+    customer_id: o.customerId || null,
     created_at: o.createdAt
   };
 }
@@ -197,6 +199,56 @@ class Store {
     const patch = { status: newStatus, timeline };
     if (courier) patch.courier = courier;
     return orderFromRow(check(await this.db.from('orders').update(patch).eq('id', order.id).select().single()));
+  }
+
+  async getOrdersByCustomer(customerId) {
+    const rows = check(await this.db.from('orders').select('*')
+      .eq('customer_id', customerId).order('created_at', { ascending: false }).limit(50));
+    return rows.map(orderFromRow);
+  }
+
+  // Atomically take stock for [{id, quantity}]; throws OUT_OF_STOCK:<id> if any item is short
+  async reserveStock(items) {
+    const { error } = await this.db.rpc('reserve_stock', { items });
+    if (error) {
+      const err = new Error(error.message);
+      const m = /OUT_OF_STOCK:(\S+)/.exec(error.message);
+      if (m) err.outOfStockId = m[1];
+      throw err;
+    }
+  }
+
+  async releaseStock(items) {
+    check(await this.db.rpc('release_stock', { items }));
+  }
+
+  // ---------------- Customers ----------------
+  async getCustomerByEmail(email) {
+    return check(await this.db.from('customers').select('*')
+      .eq('email', String(email).trim().toLowerCase()).maybeSingle());
+  }
+
+  async getCustomerById(id) {
+    return check(await this.db.from('customers').select('*').eq('id', id).maybeSingle());
+  }
+
+  async createCustomer({ email, name, phone, passwordHash }) {
+    const res = await this.db.from('customers').insert({
+      email: String(email).trim().toLowerCase(), name, phone: phone || null, password_hash: passwordHash
+    }).select().single();
+    if (res.error && res.error.code === '23505') {
+      const err = new Error('An account with this email already exists');
+      err.status = 409;
+      throw err;
+    }
+    return check(res);
+  }
+
+  async updateCustomer(id, patch) {
+    const allowed = ['name', 'phone', 'address', 'city', 'cart', 'password_hash'];
+    const row = {};
+    for (const k of allowed) if (patch[k] !== undefined) row[k] = patch[k];
+    return check(await this.db.from('customers').update(row).eq('id', id).select().single());
   }
 
   // ---------------- Settings ----------------

@@ -28,10 +28,9 @@
       "originalPrice": 2650,
       "stock": 8,
       "badge": "Limited Edition",
-      "image": "/assets/lookbook_4_handbag.jpg",
+      "image": "/assets/products/rose-gold-crown-handbag.jpg",
       "images": [
-        "/assets/lookbook_4_handbag.jpg",
-        "/assets/brand_artwork.jpg"
+        "/assets/products/rose-gold-crown-handbag.jpg"
       ],
       "description": "Exquisite handcrafted evening handbag with crystal encrusted crown clasp and dual gold chains.",
       "features": [
@@ -48,10 +47,9 @@
       "originalPrice": 2350,
       "stock": 15,
       "badge": "Bestseller",
-      "image": "/assets/lookbook_1_fiom.jpg",
+      "image": "/assets/products/fiom-monogram-crossbody.jpg",
       "images": [
-        "/assets/lookbook_1_fiom.jpg",
-        "/assets/bag_video_clean.jpg"
+        "/assets/products/fiom-monogram-crossbody.jpg"
       ],
       "description": "Premium Cross body bag with both long and short belt. Features our signature FIOM monogram textured finish, high-grade gold-tone hardware, and versatile styling.",
       "features": [
@@ -70,10 +68,9 @@
       "originalPrice": 2450,
       "stock": 12,
       "badge": "New Arrival",
-      "image": "/assets/lookbook_2_clover.jpg",
+      "image": "/assets/products/floral-clover-crossbody.jpg",
       "images": [
-        "/assets/lookbook_2_clover.jpg",
-        "/assets/bag_clover.jpg"
+        "/assets/products/floral-clover-crossbody.jpg"
       ],
       "description": "Elegant monogram floral clover pattern with luxury champagne gold accents. Comes with dual belts for shoulder or handbag wear.",
       "features": [
@@ -92,10 +89,9 @@
       "originalPrice": 2150,
       "stock": 18,
       "badge": "Trending",
-      "image": "/assets/lookbook_3_chocolate.jpg",
+      "image": "/assets/products/chocolate-ribbed-crossbody.jpg",
       "images": [
-        "/assets/lookbook_3_chocolate.jpg",
-        "/assets/bag_brown_solid.jpg"
+        "/assets/products/chocolate-ribbed-crossbody.jpg"
       ],
       "description": "Rich chocolate brown minimal crossbody bag with ribbed edge trim and golden hardware. Pairs effortlessly with both ethnic and western attire.",
       "features": [
@@ -113,10 +109,9 @@
       "originalPrice": 2390,
       "stock": 10,
       "badge": "Featured",
-      "image": "/assets/lookbook_5_gold_crest.jpg",
+      "image": "/assets/products/golden-crest-crossbody.jpg",
       "images": [
-        "/assets/lookbook_5_gold_crest.jpg",
-        "/assets/bag_monogram_gold.jpg"
+        "/assets/products/golden-crest-crossbody.jpg"
       ],
       "description": "Exclusive golden deer emblem on monogram leather. Comes with long adjustable belt and short hand strap for modern versatility.",
       "features": [
@@ -134,9 +129,9 @@
       "originalPrice": 650,
       "stock": 25,
       "badge": "Popular",
-      "image": "/assets/photo_grid_0_0.jpg",
+      "image": "/assets/products/photo-grid-0-0.jpg",
       "images": [
-        "/assets/photo_grid_0_0.jpg"
+        "/assets/products/photo-grid-0-0.jpg"
       ],
       "description": "Intricately handcrafted pearl and crystal embellished hair clips and bow set. High-grip teeth that stay secure without pulling.",
       "features": [
@@ -174,9 +169,9 @@
       "originalPrice": 750,
       "stock": 30,
       "badge": "Trending",
-      "image": "/assets/photo_grid_1_1.jpg",
+      "image": "/assets/products/photo-grid-1-1.jpg",
       "images": [
-        "/assets/photo_grid_1_1.jpg"
+        "/assets/products/photo-grid-1-1.jpg"
       ],
       "description": "High-gloss salon finish medium almond press-on nails. Reusable up to 5 times with gentle removal.",
       "features": [
@@ -194,9 +189,9 @@
       "originalPrice": 950,
       "stock": 20,
       "badge": "New",
-      "image": "/assets/photo_grid_2_1.jpg",
+      "image": "/assets/products/photo-grid-2-1.jpg",
       "images": [
-        "/assets/photo_grid_2_1.jpg"
+        "/assets/products/photo-grid-2-1.jpg"
       ],
       "description": "Minimalist dainty gold ring stack with micro-pave zirconia stones. Adjustable open band design fits most finger sizes.",
       "features": [

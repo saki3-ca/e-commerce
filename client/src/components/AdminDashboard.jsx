@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Package, ShoppingCart, PlusCircle, Mail, Settings, CheckCircle2, 
-  Clock, AlertCircle, RefreshCw, Trash2, Edit3, Eye, Send, 
-  ExternalLink, User, Phone, MapPin, DollarSign, Upload, Image as ImageIcon,
-  Sparkles, Check, ChevronRight
+  AlertCircle, RefreshCw, Trash2, 
+  ExternalLink, 
+  Check
 } from 'lucide-react';
 import { api } from '../services/api';
 import BrandLogo from './BrandLogo';

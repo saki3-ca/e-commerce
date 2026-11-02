@@ -1,126 +1,67 @@
 import React from 'react';
-import { ShoppingBag, Eye, Star, Sparkles } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import { formatPrice, ProductImage } from './ui';
 
-export default function ProductCard({ product, onSelectProduct, onAddToCart }) {
-  const discountPercent = product.originalPrice && product.originalPrice > product.price
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-    : null;
+export default function ProductCard({ product, onSelect, onQuickAdd, index = 0 }) {
+  const soldOut = product.stock <= 0;
+  const onSale = product.originalPrice && product.originalPrice > product.price;
 
   return (
-    <div className="group bg-white rounded-xl sm:rounded-2xl border border-[#ede2da] overflow-hidden shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between active:border-[#c59b27]">
-      {/* Product Image Box */}
-      <div 
-        onClick={() => onSelectProduct(product)}
-        className="relative w-full aspect-square overflow-hidden bg-[#faf5f0] cursor-pointer"
-      >
-        <img
-          src={product.image || '/assets/bag_fiom.jpg'}
-          alt={product.name}
-          loading="lazy"
-          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = '/assets/bag_fiom.jpg';
-          }}
-        />
+    <article className="group anim-rise" style={{ animationDelay: `${Math.min(index, 8) * 60}ms` }}>
+      <div className="relative overflow-hidden bg-sand aspect-square">
+        <button
+          onClick={() => onSelect(product)}
+          className="block w-full h-full"
+          aria-label={`View ${product.name}`}
+        >
+          <ProductImage
+            src={product.image}
+            alt={product.name}
+            loading="lazy"
+            className={`w-full h-full object-cover transition-transform duration-[1.2s] ease-[var(--ease-lux)] group-hover:scale-[1.04] ${soldOut ? 'opacity-60' : ''}`}
+          />
+        </button>
 
-        {/* Badges */}
-        <div className="absolute top-2 left-2 sm:top-2.5 sm:left-2.5 flex flex-col gap-1 items-start z-10 pointer-events-none">
-          {product.badge && (
-            <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold tracking-wider uppercase bg-[#1f1d1d] text-[#e6c89c] shadow-xs">
-              {product.badge}
-            </span>
-          )}
-          {discountPercent && (
-            <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold tracking-wider uppercase bg-[#c59b27] text-white shadow-xs">
-              -{discountPercent}%
-            </span>
-          )}
-        </div>
-
-        {/* Quick View Button (Desktop Hover) */}
-        <div className="hidden sm:flex absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center gap-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelectProduct(product);
-            }}
-            className="p-2.5 bg-white/90 hover:bg-white text-stone-800 rounded-full shadow-md backdrop-blur-xs transform translate-y-2 group-hover:translate-y-0 transition-all cursor-pointer"
-            title="Quick View"
-          >
-            <Eye className="w-4 h-4 text-stone-700" />
-          </button>
-        </div>
-
-        {/* Stock warning */}
-        {product.stock <= 3 && product.stock > 0 && (
-          <div className="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2 text-[9px] sm:text-[10px] font-semibold bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded-md border border-rose-200">
-            Only {product.stock} left
-          </div>
+        {(product.badge || soldOut) && (
+          <span className="absolute left-3 top-3 bg-paper/90 px-2.5 py-1 label text-[9.5px] text-ink pointer-events-none">
+            {soldOut ? 'Sold out' : product.badge}
+          </span>
         )}
-        {product.stock <= 0 && (
-          <div className="absolute inset-0 bg-white/70 backdrop-blur-xs flex items-center justify-center">
-            <span className="px-2.5 py-1 bg-stone-800 text-white text-[11px] sm:text-xs font-semibold rounded-full">
-              Out of Stock
-            </span>
-          </div>
+
+        {/* Desktop quick add */}
+        {!soldOut && (
+          <button
+            onClick={() => onQuickAdd(product)}
+            className="hidden md:flex absolute inset-x-0 bottom-0 h-12 items-center justify-center bg-paper/95 label text-ink translate-y-full group-hover:translate-y-0 focus-visible:translate-y-0 transition-transform duration-500 ease-[var(--ease-lux)] hover:bg-paper"
+          >
+            Add to bag
+          </button>
         )}
       </div>
 
-      {/* Product Content Details (Mobile Ergonomic Spacing) */}
-      <div className="p-2.5 sm:p-4 flex flex-col flex-1 justify-between gap-2">
-        <div>
-          <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-[#917666] mb-0.5">
-            <span className="uppercase font-semibold tracking-wider truncate mr-1">{product.category}</span>
-            <div className="flex items-center text-amber-500 shrink-0">
-              <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-current" />
-              <span className="ml-0.5 sm:ml-1 text-[10px] sm:text-[11px] font-medium text-stone-600">4.9</span>
-            </div>
-          </div>
-
-          <h3 
-            onClick={() => onSelectProduct(product)}
-            className="text-xs sm:text-sm font-semibold text-[#28211d] hover:text-[#997316] line-clamp-2 transition-colors cursor-pointer leading-snug"
-            title={product.name}
-          >
+      <div className="pt-4 flex items-start justify-between gap-3">
+        <button onClick={() => onSelect(product)} className="text-left min-w-0">
+          <p className="label text-[10px] text-muted">{product.category}</p>
+          <h3 className="mt-1.5 font-display text-[19px] leading-snug text-ink line-clamp-2">
             {product.name}
           </h3>
-
-          {product.category === 'Bags' && (
-            <p className="mt-0.5 text-[10px] sm:text-[11px] text-[#b07e15] font-medium line-clamp-1">
-              ✨ Dual belts included
-            </p>
-          )}
-        </div>
-
-        {/* Pricing and Add to Bag */}
-        <div className="pt-2 border-t border-[#f0e6de] flex items-center justify-between gap-1.5">
-          <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-1.5 truncate">
-            <span className="text-sm sm:text-base font-bold text-[#1f1d1d] truncate">
-              ৳{product.price.toLocaleString()}
-            </span>
-            {product.originalPrice && (
-              <span className="text-[10px] sm:text-xs text-stone-400 line-through truncate">
-                ৳{product.originalPrice.toLocaleString()}
-              </span>
+          <p className="mt-1.5 text-[14px] font-normal text-ink tabular-nums">
+            {formatPrice(product.price)}
+            {onSale && (
+              <span className="ml-2 text-muted line-through font-light">{formatPrice(product.originalPrice)}</span>
             )}
-          </div>
-
+          </p>
+        </button>
+        {!soldOut && (
           <button
-            disabled={product.stock <= 0}
-            onClick={() => onAddToCart(product)}
+            onClick={() => onQuickAdd(product)}
             aria-label={`Add ${product.name} to bag`}
-            className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all shrink-0 cursor-pointer active:scale-90 ${
-              product.stock > 0
-                ? 'bg-[#1f1d1d] hover:bg-[#c59b27] text-white shadow-xs'
-                : 'bg-stone-200 text-stone-400 cursor-not-allowed'
-            }`}
+            className="md:hidden mt-5 shrink-0 w-9 h-9 border border-line flex items-center justify-center text-ink active:bg-sand"
           >
-            <ShoppingBag className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-            <span>Add</span>
+            <Plus className="w-4 h-4" strokeWidth={1.25} />
           </button>
-        </div>
+        )}
       </div>
-    </div>
+    </article>
   );
 }

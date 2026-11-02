@@ -10,6 +10,10 @@ const INITIAL_DATA = {
     currency: '৳',
     shippingDhaka: 70,
     shippingOutsideDhaka: 130,
+    freeShippingThreshold: 2500,
+    mobileBankingNumber: '01303-662891',
+    // Coupon code -> percent off subtotal (checked on the server only)
+    coupons: { WELCOME10: 10, MASFEEH10: 10 },
     facebookUrl: 'https://www.facebook.com/profile.php?id=61596179578624',
     instagramUrl: '',
     smtpHost: '',

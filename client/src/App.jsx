@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import ProductCard from './components/ProductCard';
@@ -6,378 +6,405 @@ import ProductDetailsModal from './components/ProductDetailsModal';
 import CartDrawer from './components/CartDrawer';
 import CheckoutModal from './components/CheckoutModal';
 import OrderTrackingModal from './components/OrderTrackingModal';
+import AccountDrawer from './components/AccountDrawer';
 import AdminDashboard from './components/AdminDashboard';
 import AdminLogin from './components/AdminLogin';
 import MobileBottomNav from './components/MobileBottomNav';
 import Footer from './components/Footer';
-import { api, auth } from './services/api';
-import { Sparkles, SlidersHorizontal, Check, ShoppingBag, ArrowUpRight } from 'lucide-react';
+import { api, auth, customerAuth } from './services/api';
+import { useCart } from './hooks/useCart';
+
+const isAdminPath = () => window.location.pathname.replace(/\/+$/, '') === '/admin';
+
+function navigate(path) {
+  if (window.location.pathname !== path) window.history.pushState({}, '', path);
+  window.dispatchEvent(new PopStateEvent('popstate'));
+}
+
+const SORTS = [
+  ['featured', 'Featured'],
+  ['newest', 'Newest'],
+  ['price-low', 'Price, low to high'],
+  ['price-high', 'Price, high to low']
+];
 
 export default function App() {
-  // Storefront & Admin toggle
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [activeTab, setActiveTab] = useState('shop');
-  // Logged-in owner/admin (null = not logged in)
+  const [adminRoute, setAdminRoute] = useState(isAdminPath);
   const [adminUser, setAdminUser] = useState(null);
+  const [adminChecked, setAdminChecked] = useState(!auth.getToken());
 
-  // Products & Settings State
   const [products, setProducts] = useState([]);
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
-  // Filters & Search
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortOption, setSortOption] = useState('featured');
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [account, setAccount] = useState(null);
+  const cart = useCart(account);
 
-  // Modals & Drawers
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [isTrackOpen, setIsTrackOpen] = useState(false);
+  const [category, setCategory] = useState('All');
+  const [search, setSearch] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [sort, setSort] = useState('featured');
 
-  // Cart State (Persisted in localStorage)
-  const [cartItems, setCartItems] = useState(() => {
+  const [selected, setSelected] = useState(null);
+  const [bagOpen, setBagOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [track, setTrack] = useState({ open: false, id: '' });
+  const [coupon, setCoupon] = useState('');
+  const [toast, setToast] = useState(null);
+
+  // ---------- routing ----------
+  useEffect(() => {
+    const onPop = () => setAdminRoute(isAdminPath());
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  // ---------- data ----------
+  const loadData = useCallback(async () => {
+    setLoadError('');
     try {
-      const saved = localStorage.getItem('masfeeh_cart');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  // Coupons
-  const [discountCode, setDiscountCode] = useState('');
-  const [discountAmount, setDiscountAmount] = useState(0);
-
-  // Toast notification
-  const [toastMessage, setToastMessage] = useState('');
-
-  // Fetch initial data
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [prods, sets] = await Promise.all([
-        api.getProducts(),
-        api.getSettings()
-      ]);
+      const [prods, sets] = await Promise.all([api.getProducts(), api.getSettings()]);
       setProducts(prods);
       setSettings(sets);
     } catch (err) {
-      console.error('Failed to load store data:', err);
+      setLoadError(err.message || 'The collection could not be loaded.');
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadData();
   }, []);
 
-  // Restore an existing admin session; drop it if the server rejects it
+  useEffect(() => { loadData(); }, [loadData]);
+
+  // ---------- sessions ----------
   useEffect(() => {
     auth.onUnauthorized = () => setAdminUser(null);
+    customerAuth.onUnauthorized = () => setAccount(null);
+
     if (auth.getToken()) {
-      api.me().then(({ user }) => setAdminUser(user)).catch(() => auth.clear());
+      api.me()
+        .then(({ user }) => setAdminUser(user))
+        .catch(() => auth.clear())
+        .finally(() => setAdminChecked(true));
     }
+    if (customerAuth.getToken()) {
+      api.getAccount()
+        .then(({ account: acc }) => {
+          setAccount(acc);
+          // A bag saved on another device shows up here if this device's bag is empty
+          if (cart.lines.length === 0 && acc.cart && acc.cart.length) cart.replace(acc.cart);
+        })
+        .catch(() => customerAuth.clear());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleLogout = () => {
-    auth.clear();
-    setAdminUser(null);
-    setIsAdmin(false);
-  };
+  // ---------- catalogue ----------
+  const productById = useMemo(() => new Map(products.map(p => [p.id, p])), [products]);
 
-  // Save cart to localStorage
+  // Drop bag lines for products that no longer exist
   useEffect(() => {
-    try {
-      localStorage.setItem('masfeeh_cart', JSON.stringify(cartItems));
-    } catch (e) {
-      console.error('Failed to save cart:', e);
-    }
-  }, [cartItems]);
+    if (loading || loadError) return;
+    const stale = cart.lines.filter(l => !productById.has(l.id));
+    stale.forEach(l => cart.remove(l.id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productById, loading]);
 
-  const showToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(''), 3500);
-  };
+  const categories = useMemo(() => {
+    const seen = [];
+    products.forEach(p => { if (p.category && !seen.includes(p.category)) seen.push(p.category); });
+    return ['All', ...seen];
+  }, [products]);
 
-  // Cart operations
-  const handleAddToCart = (product, quantity = 1) => {
-    setCartItems(prev => {
-      const existing = prev.find(item => item.id === product.id);
-      if (existing) {
-        return prev.map(item =>
-          item.id === product.id
-            ? { ...item, quantity: Math.min(product.stock, item.quantity + quantity) }
-            : item
-        );
-      }
-      return [...prev, {
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        image: product.image,
-        quantity: Math.min(product.stock, quantity)
-      }];
-    });
-    showToast(`Added "${product.name}" to bag!`);
-  };
-
-  const handleBuyNow = (product, quantity = 1) => {
-    handleAddToCart(product, quantity);
-    setSelectedProduct(null);
-    setIsCheckoutOpen(true);
-  };
-
-  const handleUpdateQuantity = (productId, newQty) => {
-    if (newQty <= 0) {
-      handleRemoveItem(productId);
-      return;
-    }
-    setCartItems(prev =>
-      prev.map(item => item.id === productId ? { ...item, quantity: newQty } : item)
+  const visible = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const list = products.filter(p =>
+      (category === 'All' || p.category === category) &&
+      (!q || [p.name, p.category, p.description].some(v => v && v.toLowerCase().includes(q)))
     );
+    const sorted = [...list];
+    if (sort === 'price-low') sorted.sort((a, b) => a.price - b.price);
+    if (sort === 'price-high') sorted.sort((a, b) => b.price - a.price);
+    if (sort === 'newest') sorted.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    // featured: in-stock pieces first, otherwise keep the shop's order
+    if (sort === 'featured') sorted.sort((a, b) => (b.stock > 0) - (a.stock > 0));
+    return sorted;
+  }, [products, category, search, sort]);
+
+  const bagItems = cart.lines
+    .map(l => ({ product: productById.get(l.id), quantity: l.quantity }))
+    .filter(i => i.product);
+  const bagCount = bagItems.reduce((n, i) => n + i.quantity, 0);
+  const inBag = id => (cart.lines.find(l => l.id === id) || {}).quantity || 0;
+
+  // ---------- actions ----------
+  const showToast = (message, action) => {
+    setToast({ message, action, key: Date.now() });
+  };
+  useEffect(() => {
+    if (!toast) return undefined;
+    const t = setTimeout(() => setToast(null), 3800);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  const addToBag = (product, quantity = 1, { silent = false } = {}) => {
+    if (quantity <= 0) return;
+    cart.add(product.id, quantity, product.stock);
+    if (!silent) showToast(`${product.name} added to your bag`, { label: 'View bag', run: () => setBagOpen(true) });
   };
 
-  const handleRemoveItem = (productId) => {
-    setCartItems(prev => prev.filter(item => item.id !== productId));
+  const scrollToCollection = () => {
+    document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const applyDiscount = (code, amount) => {
-    setDiscountCode(code);
-    setDiscountAmount(amount);
-    showToast(`Coupon ${code} applied (-৳${amount})!`);
+  const chooseCategory = cat => {
+    setCategory(cat);
+    setSearch('');
+    requestAnimationFrame(scrollToCollection);
   };
 
-  const handleOrderSuccess = () => {
-    setCartItems([]);
-    setDiscountCode('');
-    setDiscountAmount(0);
+  const goHome = () => {
+    setCategory('All');
+    setSearch('');
+    setSearchOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Filter & Sort Products
-  const filteredProducts = products.filter(p => {
-    const matchesCategory = selectedCategory === 'All' || p.category.toLowerCase() === selectedCategory.toLowerCase();
-    const q = searchQuery.toLowerCase();
-    const matchesSearch = !searchQuery || 
-      p.name.toLowerCase().includes(q) || 
-      (p.description && p.description.toLowerCase().includes(q)) ||
-      p.category.toLowerCase().includes(q);
-    return matchesCategory && matchesSearch;
-  }).sort((a, b) => {
-    if (sortOption === 'price-low') return a.price - b.price;
-    if (sortOption === 'price-high') return b.price - a.price;
-    if (sortOption === 'newest') return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
-    return 0; // featured
-  });
+  const openTrack = (id = '') => {
+    setCheckoutOpen(false);
+    setAccountOpen(false);
+    setTrack({ open: true, id });
+  };
 
-  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const handleAuthenticated = (res, kind) => {
+    customerAuth.setToken(res.token);
+    setAccount(res.account);
+    if (kind === 'login') cart.mergeFromAccount(res.account.cart);
+    setAccountOpen(false);
+    showToast(kind === 'signup' ? `Welcome to Masfeeh, ${res.account.name.split(' ')[0]}` : `Welcome back, ${res.account.name.split(' ')[0]}`);
+  };
 
-  // If in Admin mode, show Owner Admin Portal
-  if (isAdmin) {
+  const signOut = () => {
+    customerAuth.clear();
+    setAccount(null);
+    cart.clear();
+    setAccountOpen(false);
+    showToast('You have been signed out');
+  };
+
+  const handleOrderPlaced = () => {
+    cart.clear();
+    setCoupon('');
+    if (account) api.getAccount().then(({ account: acc }) => setAccount(acc)).catch(() => {});
+    loadData(); // refresh stock
+  };
+
+  // ---------- staff area (/admin) ----------
+  if (adminRoute) {
+    if (!adminChecked) return <div className="min-h-screen bg-ivory" />;
     if (!adminUser) {
-      return <AdminLogin onSuccess={setAdminUser} onCancel={() => setIsAdmin(false)} />;
+      return <AdminLogin onSuccess={setAdminUser} onCancel={() => navigate('/')} />;
     }
     return (
-      <AdminDashboard 
-        onSwitchToStore={() => setIsAdmin(false)}
+      <AdminDashboard
+        onSwitchToStore={() => { navigate('/'); loadData(); }}
         settings={settings}
         onRefreshSettings={loadData}
         user={adminUser}
-        onLogout={handleLogout}
+        onLogout={() => { auth.clear(); setAdminUser(null); navigate('/'); }}
       />
     );
   }
 
-  return (
-    <div className="min-h-screen flex flex-col bg-[#faf7f5] text-[#2c2420]">
-      {/* Toast Notification (Mobile Safe Positioning) */}
-      {toastMessage && (
-        <div className="fixed top-3 inset-x-3 sm:inset-x-auto sm:right-6 sm:top-20 z-50 bg-[#1f1d1d] text-[#e6c89c] px-4 py-2.5 rounded-xl shadow-2xl border border-[#d4af37] text-xs flex items-center justify-between sm:justify-start gap-2 animate-in slide-in-from-top-4 max-w-sm mx-auto">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#d4af37] shrink-0" />
-            <span className="font-medium">{toastMessage}</span>
-          </div>
-          <button 
-            onClick={() => setToastMessage('')}
-            className="text-stone-400 hover:text-white text-xs px-1"
-          >
-            ✕
-          </button>
-        </div>
-      )}
+  const showHero = category === 'All' && !search;
 
-      {/* Navigation Header */}
+  return (
+    <div className="min-h-screen flex flex-col">
+      <a href="#collection" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:bg-paper focus:px-4 focus:py-2 label">
+        Skip to collection
+      </a>
+
       <Header
-        cartCount={cartCount}
-        onOpenCart={() => setIsCartOpen(true)}
-        onOpenTrack={() => setIsTrackOpen(true)}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        selectedCategory={selectedCategory}
-        setSelectedCategory={setSelectedCategory}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        isAdmin={isAdmin}
-        setIsAdmin={setIsAdmin}
+        categories={categories}
+        selectedCategory={category}
+        onSelectCategory={chooseCategory}
+        searchOpen={searchOpen}
+        setSearchOpen={open => { setSearchOpen(open); if (!open) setSearch(''); }}
+        searchQuery={search}
+        setSearchQuery={setSearch}
+        cartCount={bagCount}
+        onOpenBag={() => setBagOpen(true)}
+        onOpenAccount={() => setAccountOpen(true)}
+        onOpenTrack={() => openTrack()}
+        account={account}
         settings={settings}
-        mobileSearchOpen={mobileSearchOpen}
-        setMobileSearchOpen={setMobileSearchOpen}
+        onHome={goHome}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 pb-16 md:pb-0">
-        {/* Hero Section */}
-        {selectedCategory === 'All' && !searchQuery && (
-          <Hero 
-            onExploreCategory={(cat) => setSelectedCategory(cat)}
-            settings={settings}
-          />
-        )}
+      <main className="flex-1">
+        {showHero && <Hero onShop={scrollToCollection} onShopCategory={chooseCategory} />}
 
-        {/* Product Catalog Section */}
-        <section className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
-          {/* Section Header & Sorters */}
-          <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-3 sm:gap-4 pb-4 sm:pb-6 border-b border-[#ebdcd3]">
-            <div>
-              <div className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#997316]">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Boutique Catalog</span>
-              </div>
-              <h2 className="font-serif-luxury text-xl sm:text-3xl font-bold text-[#231b17] mt-0.5">
-                {selectedCategory === 'All' ? 'Signature Collection' : `${selectedCategory}`}
-              </h2>
-              <p className="text-[11px] sm:text-xs text-stone-500 mt-0.5 sm:mt-1">
-                Showing {filteredProducts.length} premium accessories from Masfeeh.
-              </p>
-            </div>
-
-            {/* Sorter Selector */}
-            <div className="flex items-center justify-between sm:justify-start gap-2">
-              <span className="text-xs text-stone-500 flex items-center gap-1">
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-                <span>Sort:</span>
-              </span>
-              <select
-                value={sortOption}
-                onChange={(e) => setSortOption(e.target.value)}
-                className="px-3 py-1.5 text-xs bg-white border border-[#ebdcd3] rounded-lg focus:outline-none focus:border-[#c59b27] text-stone-800"
-              >
-                <option value="featured">Featured Collection</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="newest">Newest Arrivals</option>
-              </select>
-            </div>
+        <section id="collection" className="scroll-mt-40 max-w-7xl mx-auto w-full px-5 sm:px-8 pt-16 sm:pt-24 pb-24">
+          <div className="flex flex-col items-center text-center">
+            <p className="label text-brass">{search ? 'Search' : 'Masfeeh'}</p>
+            <h2 className="mt-4 font-display text-[40px] sm:text-[52px] leading-none text-ink">
+              {search ? `“${search}”` : category === 'All' ? 'The Collection' : category}
+            </h2>
           </div>
 
-          {/* Product Grid */}
+          <div className="mt-12 flex items-center justify-between border-y border-line py-3">
+            <p className="text-[13px] text-muted tabular-nums">
+              {loading ? 'Loading' : `${visible.length} ${visible.length === 1 ? 'piece' : 'pieces'}`}
+            </p>
+            <label className="flex items-center gap-3">
+              <span className="label text-muted hidden sm:inline">Sort</span>
+              <select
+                value={sort}
+                onChange={e => setSort(e.target.value)}
+                className="bg-transparent text-[13px] text-ink focus:outline-none pr-1"
+                aria-label="Sort products"
+              >
+                {SORTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+            </label>
+          </div>
+
           {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-6 py-12">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="animate-pulse bg-stone-200/60 rounded-xl aspect-square"></div>
+            <div className="mt-12 grid grid-cols-2 lg:grid-cols-3 gap-x-5 sm:gap-x-8 gap-y-14">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i}>
+                  <div className="aspect-square bg-sand animate-pulse" />
+                  <div className="mt-4 h-3 w-1/3 bg-sand animate-pulse" />
+                  <div className="mt-3 h-4 w-2/3 bg-sand animate-pulse" />
+                </div>
               ))}
             </div>
-          ) : filteredProducts.length === 0 ? (
-            <div className="text-center py-16 text-stone-500">
-              <ShoppingBag className="w-12 h-12 mx-auto mb-3 text-stone-300" />
-              <h3 className="font-serif-luxury text-lg font-semibold text-stone-800">No items found</h3>
-              <p className="text-xs text-stone-400 mt-1">
-                Try selecting a different category or clearing your search term.
-              </p>
-              <button
-                onClick={() => { setSelectedCategory('All'); setSearchQuery(''); }}
-                className="mt-4 px-4 py-2 bg-[#1f1d1d] text-[#e6c89c] text-xs font-semibold rounded-full"
-              >
-                Reset Filters
-              </button>
+          ) : loadError ? (
+            <div className="py-24 text-center">
+              <p className="font-display text-[28px] text-ink">The collection is resting</p>
+              <p className="mt-3 text-[14px] text-muted">{loadError}</p>
+              <button className="btn-outline mt-8" onClick={() => { setLoading(true); loadData(); }}>Try again</button>
+            </div>
+          ) : visible.length === 0 ? (
+            <div className="py-24 text-center">
+              <p className="font-display text-[28px] text-ink">Nothing matches just yet</p>
+              <p className="mt-3 text-[14px] text-muted">Try another word, or explore the full collection.</p>
+              <button className="btn-outline mt-8" onClick={() => { setSearch(''); setCategory('All'); }}>View all pieces</button>
             </div>
           ) : (
-            <div className="mt-4 sm:mt-6 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-6">
-              {filteredProducts.map((prod) => (
-                <ProductCard
-                  key={prod.id}
-                  product={prod}
-                  onSelectProduct={(p) => setSelectedProduct(p)}
-                  onAddToCart={(p) => handleAddToCart(p, 1)}
-                />
+            <div className="mt-12 grid grid-cols-2 lg:grid-cols-3 gap-x-5 sm:gap-x-8 gap-y-14">
+              {visible.map((p, i) => (
+                <ProductCard key={p.id} product={p} index={i} onSelect={setSelected} onQuickAdd={prod => addToBag(prod, 1)} />
               ))}
             </div>
           )}
         </section>
+
+        {showHero && (
+          <section className="border-t border-line bg-paper">
+            <div className="max-w-3xl mx-auto px-6 py-24 sm:py-32 text-center">
+              <p className="label text-brass">The house</p>
+              <p className="mt-8 font-display text-[28px] sm:text-[36px] leading-[1.3] text-ink">
+                We believe in premium, authentic and timeless beauty.{' '}
+                <em className="text-ink-soft">Every detail matters, every choice reflects elegance.</em>
+              </p>
+              <p className="mt-8 text-[14px] text-muted">Masfeeh · Bashundhara, Dhaka</p>
+            </div>
+          </section>
+        )}
       </main>
 
-      {/* Footer */}
       <Footer
-        onSelectCategory={(cat) => setSelectedCategory(cat)}
-        onOpenTrack={() => setIsTrackOpen(true)}
-        onToggleAdmin={() => setIsAdmin(true)}
+        categories={categories}
+        onSelectCategory={chooseCategory}
+        onOpenTrack={() => openTrack()}
+        onOpenAccount={() => setAccountOpen(true)}
         settings={settings}
       />
 
-      {/* Dynamic Mobile Bottom Navigation Bar (md:hidden) */}
       <MobileBottomNav
-        cartCount={cartCount}
-        onOpenCart={() => setIsCartOpen(true)}
-        onOpenTrack={() => setIsTrackOpen(true)}
-        onOpenSearch={() => {
-          setMobileSearchOpen(prev => !prev);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-        onGoHome={() => {
-          setSelectedCategory('All');
-          setSearchQuery('');
-          setIsAdmin(false);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-        selectedCategory={selectedCategory}
-        searchQuery={searchQuery}
-        isAdmin={isAdmin}
-        setIsAdmin={setIsAdmin}
+        cartCount={bagCount}
+        account={account}
+        onHome={goHome}
+        onSearch={() => { setSearchOpen(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+        onTrack={() => openTrack()}
+        onAccount={() => setAccountOpen(true)}
+        onBag={() => setBagOpen(true)}
       />
 
-      {/* Product Details Modal */}
-      {selectedProduct && (
+      {selected && (
         <ProductDetailsModal
-          product={selectedProduct}
-          onClose={() => setSelectedProduct(null)}
-          onAddToCart={handleAddToCart}
-          onBuyNow={handleBuyNow}
+          key={selected.id}
+          product={productById.get(selected.id) || selected}
+          inBag={inBag(selected.id)}
+          settings={settings}
+          onClose={() => setSelected(null)}
+          onAddToBag={(p, q) => { addToBag(p, q, { silent: true }); setToast(null); setBagOpen(true); }}
+          onBuyNow={(p, q) => {
+            if (q > 0) cart.add(p.id, q, p.stock);
+            setSelected(null);
+            setCheckoutOpen(true);
+          }}
         />
       )}
 
-      {/* Cart Drawer */}
       <CartDrawer
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        cartItems={cartItems}
-        onUpdateQuantity={handleUpdateQuantity}
-        onRemoveItem={handleRemoveItem}
-        onProceedCheckout={() => setIsCheckoutOpen(true)}
-        discountCode={discountCode}
-        setDiscountCode={setDiscountCode}
-        discountAmount={discountAmount}
-        applyDiscount={applyDiscount}
+        open={bagOpen}
+        onClose={() => setBagOpen(false)}
+        items={bagItems}
+        lines={cart.lines}
+        onSetQuantity={cart.setQuantity}
+        onRemove={cart.remove}
+        coupon={coupon}
+        setCoupon={setCoupon}
+        onCheckout={() => { setBagOpen(false); setToast(null); setCheckoutOpen(true); }}
+        onContinue={() => { setBagOpen(false); scrollToCollection(); }}
       />
 
-      {/* Checkout Modal */}
       <CheckoutModal
-        isOpen={isCheckoutOpen}
-        onClose={() => setIsCheckoutOpen(false)}
-        cartItems={cartItems}
-        discountAmount={discountAmount}
-        discountCode={discountCode}
+        open={checkoutOpen}
+        onClose={() => setCheckoutOpen(false)}
+        items={bagItems}
+        lines={cart.lines}
+        coupon={coupon}
         settings={settings}
-        onOrderSuccess={handleOrderSuccess}
+        account={account}
+        onSignIn={() => setAccountOpen(true)}
+        onPlaced={handleOrderPlaced}
+        onTrack={id => openTrack(id)}
       />
 
-      {/* Order Tracking Modal */}
-      <OrderTrackingModal
-        isOpen={isTrackOpen}
-        onClose={() => setIsTrackOpen(false)}
+      <AccountDrawer
+        open={accountOpen}
+        onClose={() => setAccountOpen(false)}
+        account={account}
+        cart={cart.lines}
+        onAuthenticated={handleAuthenticated}
+        onAccountUpdated={setAccount}
+        onSignOut={signOut}
+        onTrack={id => openTrack(id)}
       />
+
+      <OrderTrackingModal open={track.open} initialId={track.id} onClose={() => setTrack({ open: false, id: '' })} />
+
+      {toast && (
+        <div
+          key={toast.key}
+          role="status"
+          className="fixed z-[60] left-1/2 -translate-x-1/2 bottom-20 md:bottom-8 w-[calc(100%-2rem)] max-w-md bg-ink text-paper px-5 py-4 flex items-center justify-between gap-4 anim-up shadow-[0_10px_40px_rgba(28,24,21,0.25)]"
+        >
+          <span className="text-[14px] font-light">{toast.message}</span>
+          {toast.action && (
+            <button
+              onClick={() => { toast.action.run(); setToast(null); }}
+              className="label text-paper shrink-0 link-underline"
+            >
+              {toast.action.label}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

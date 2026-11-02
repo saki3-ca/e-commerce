@@ -31,9 +31,11 @@ const b64url = buf => Buffer.from(buf).toString('base64url');
 const pwFingerprint = passwordHash =>
   crypto.createHmac('sha256', secret()).update(String(passwordHash)).digest('base64url').slice(0, 16);
 
-function signToken(user) {
+// kind: 'admin' (owner/admin dashboard) or 'customer' (shopper account).
+// The kind is signed into the token so a customer token can never open admin endpoints.
+function signToken(user, kind = 'admin') {
   const payload = b64url(JSON.stringify({
-    sub: user.id, role: user.role, pwv: pwFingerprint(user.password_hash), exp: Date.now() + TOKEN_TTL_MS
+    sub: user.id, kind, pwv: pwFingerprint(user.password_hash), exp: Date.now() + TOKEN_TTL_MS
   }));
   const sig = b64url(crypto.createHmac('sha256', secret()).update(payload).digest());
   return `${payload}.${sig}`;
@@ -52,15 +54,28 @@ function verifyToken(token) {
   }
 }
 
+function stripHash(user) {
+  const { password_hash, ...safe } = user; // eslint-disable-line no-unused-vars
+  return safe;
+}
+
+// Admin session: "Authorization: Bearer <token>"
 async function getUserFromRequest(req) {
   const header = req.headers.authorization || '';
-  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
-  const claims = verifyToken(token);
-  if (!claims) return null;
+  const claims = verifyToken(header.startsWith('Bearer ') ? header.slice(7) : null);
+  if (!claims || claims.kind !== 'admin') return null;
   const user = await store.getAdminById(claims.sub); // null if the account was removed
   if (!user || claims.pwv !== pwFingerprint(user.password_hash)) return null;
-  const { password_hash, ...safeUser } = user; // eslint-disable-line no-unused-vars
-  return safeUser;
+  return stripHash(user);
+}
+
+// Customer session: "X-Customer-Token: <token>" (separate so both can coexist in one browser)
+async function getCustomerFromRequest(req) {
+  const claims = verifyToken(req.headers['x-customer-token']);
+  if (!claims || claims.kind !== 'customer') return null;
+  const customer = await store.getCustomerById(claims.sub);
+  if (!customer || claims.pwv !== pwFingerprint(customer.password_hash)) return null;
+  return stripHash(customer);
 }
 
 // Express middleware: rejects requests without a valid owner/admin session
@@ -75,4 +90,18 @@ async function requireAdmin(req, res, next) {
   }
 }
 
-module.exports = { hashPassword, verifyPassword, signToken, getUserFromRequest, requireAdmin };
+async function requireCustomer(req, res, next) {
+  try {
+    const customer = await getCustomerFromRequest(req);
+    if (!customer) return res.status(401).json({ error: 'Please sign in to your account.' });
+    req.customer = customer;
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = {
+  hashPassword, verifyPassword, signToken,
+  getUserFromRequest, getCustomerFromRequest, requireAdmin, requireCustomer
+};

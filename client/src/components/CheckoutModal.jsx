@@ -1,415 +1,270 @@
-import React, { useState } from 'react';
-import { X, CheckCircle2, ShieldCheck, Truck, CreditCard, Smartphone, Banknote, ArrowRight, Sparkles, AlertCircle } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import React, { useEffect, useState } from 'react';
+import { Modal, Field, formatPrice, ProductImage, Spinner } from './ui';
+import { useQuote } from '../hooks/useQuote';
 import { api } from '../services/api';
 
-export default function CheckoutModal({
-  isOpen,
-  onClose,
-  cartItems,
-  discountAmount,
-  discountCode,
-  settings,
-  onOrderSuccess
-}) {
-  if (!isOpen) return null;
+const AREAS = ['Inside Dhaka', 'Outside Dhaka'];
 
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    email: '',
-    address: '',
-    city: 'Inside Dhaka',
+function emptyForm(account) {
+  return {
+    name: account?.name || '',
+    phone: account?.phone || '',
+    email: account?.email || '',
+    address: account?.address || '',
+    city: account?.city || 'Inside Dhaka',
     notes: '',
     paymentMethod: 'Cash on Delivery',
     trxId: ''
-  });
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
-  const [placedOrder, setPlacedOrder] = useState(null);
-
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const shippingFee = formData.city === 'Inside Dhaka' 
-    ? (settings?.shippingDhaka || 70) 
-    : (settings?.shippingOutsideDhaka || 130);
-  
-  // Free shipping over 2500
-  const isFreeShipping = subtotal >= 2500;
-  const actualShipping = isFreeShipping ? 0 : shippingFee;
-  const grandTotal = Math.max(0, subtotal - (discountAmount || 0) + actualShipping);
-
-  const handleChange = (e) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
+}
 
-  const handleSubmit = async (e) => {
+export default function CheckoutModal({
+  open,
+  onClose,
+  items,
+  lines,
+  coupon,
+  settings,
+  account,
+  onSignIn,
+  onPlaced,
+  onTrack
+}) {
+  const [form, setForm] = useState(() => emptyForm(account));
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [placed, setPlaced] = useState(null);
+
+  // Fresh form every time checkout opens (prefilled for signed-in shoppers)
+  useEffect(() => {
+    if (open) {
+      setForm(emptyForm(account));
+      setError('');
+      setPlaced(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  // Account loaded while checkout is open: fill blanks only
+  useEffect(() => {
+    if (!open || !account) return;
+    setForm(f => ({
+      ...f,
+      name: f.name || account.name || '',
+      phone: f.phone || account.phone || '',
+      email: f.email || account.email || '',
+      address: f.address || account.address || ''
+    }));
+  }, [account, open]);
+
+  const { quote, loading } = useQuote(lines, { city: form.city, coupon, enabled: open && !placed });
+  const set = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+
+  const submit = async e => {
     e.preventDefault();
     setError('');
-
-    if (!formData.name.trim()) return setError('Please enter your full name');
-    if (!formData.phone.trim()) return setError('Please enter your contact phone number');
-    if (!formData.email.trim()) return setError('Please enter your email address to receive order notifications');
-    if (!formData.address.trim()) return setError('Please enter your complete delivery address');
-
+    if (!form.name.trim() || !form.phone.trim() || !form.address.trim()) {
+      setError('Please complete your name, phone number and delivery address.');
+      return;
+    }
+    setSubmitting(true);
     try {
-      setIsSubmitting(true);
-      const payload = {
+      const res = await api.createOrder({
         customer: {
-          name: formData.name.trim(),
-          phone: formData.phone.trim(),
-          email: formData.email.trim(),
-          address: formData.address.trim(),
-          city: formData.city,
-          notes: formData.notes.trim()
+          name: form.name.trim(),
+          phone: form.phone.trim(),
+          email: form.email.trim(),
+          address: form.address.trim(),
+          city: form.city,
+          notes: form.notes.trim()
         },
-        items: cartItems.map(i => ({
-          id: i.id,
-          name: i.name,
-          price: i.price,
-          quantity: i.quantity,
-          image: i.image
-        })),
-        subtotal,
-        shipping: actualShipping,
-        discount: discountAmount || 0,
-        total: grandTotal,
-        paymentMethod: formData.paymentMethod === 'bKash / Nagad' 
-          ? `Mobile Banking (${formData.trxId ? `TrxID: ${formData.trxId}` : 'Pending Verification'})`
-          : formData.paymentMethod
-      };
-
-      const res = await api.createOrder(payload);
-      setPlacedOrder(res.order);
-      onOrderSuccess();
-
-      // Trigger Celebration Confetti
-      try {
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
-      } catch (err) {
-        // ignore confetti errors
-      }
+        items: lines,
+        coupon: coupon || undefined,
+        paymentMethod: form.paymentMethod,
+        trxId: form.paymentMethod === 'Mobile Banking' ? form.trxId.trim() : undefined
+      });
+      setPlaced(res.order);
+      onPlaced(res.order);
+      window.scrollTo({ top: 0 });
     } catch (err) {
-      console.error('Order creation error:', err);
-      setError(err.message || 'Failed to place order. Please try again.');
+      setError(err.message);
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div 
-        className="relative bg-white w-full max-w-2xl rounded-t-3xl sm:rounded-2xl shadow-2xl border border-[#ebdcd3] max-h-[94vh] sm:max-h-[90vh] overflow-y-auto my-0 sm:my-8 animate-in slide-in-from-bottom sm:zoom-in-95 duration-200"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Mobile Drag Handle */}
-        <div className="sm:hidden w-12 h-1.5 bg-stone-300 rounded-full mx-auto my-2 shrink-0" />
-        {/* Modal Header */}
-        <div className="p-5 border-b border-[#ebdcd3] bg-[#faf6f2] flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-[#c59b27]" />
-            <h2 className="font-serif-luxury text-xl font-bold text-[#241d1a]">
-              {placedOrder ? 'Order Confirmed!' : 'Secure Checkout'}
-            </h2>
+  if (!open) return null;
+
+  if (placed) {
+    return (
+      <Modal open onClose={onClose} label="Order confirmed" size="max-w-xl">
+        <div className="px-8 sm:px-14 py-16 text-center">
+          <p className="label text-brass">Thank you</p>
+          <h2 className="mt-5 font-display text-[40px] leading-tight text-ink">Your order is placed</h2>
+          <p className="mt-5 text-[15px] text-muted leading-relaxed">
+            Order <span className="text-ink font-normal tracking-wide">{placed.id}</span> has been received.
+            We will call you on {placed.customer.phone} to confirm before it is dispatched.
+          </p>
+          {placed.customer.email && (
+            <p className="mt-2 text-[14px] text-muted">A confirmation will be sent to {placed.customer.email}.</p>
+          )}
+          <dl className="mt-10 border-y border-line divide-y divide-line text-[14px] text-left">
+            <div className="flex justify-between py-3"><dt className="text-muted">Total</dt><dd className="tabular-nums">{formatPrice(placed.total)}</dd></div>
+            <div className="flex justify-between py-3 gap-6"><dt className="text-muted">Payment</dt><dd className="text-right">{placed.paymentMethod}</dd></div>
+            <div className="flex justify-between py-3 gap-6"><dt className="text-muted">Deliver to</dt><dd className="text-right">{placed.customer.address}, {placed.customer.city}</dd></div>
+          </dl>
+          <p className="mt-6 text-[13px] text-muted">Keep your order number to track delivery at any time.</p>
+          <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
+            <button className="btn-primary" onClick={() => onTrack(placed.id)}>Track this order</button>
+            <button className="btn-outline" onClick={onClose}>Continue shopping</button>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-stone-200/70 hover:bg-stone-300 text-stone-700 flex items-center justify-center transition-all cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
         </div>
+      </Modal>
+    );
+  }
 
-        {/* Success View */}
-        {placedOrder ? (
-          <div className="p-6 sm:p-8 text-center space-y-5">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-xs">
-              <CheckCircle2 className="w-10 h-10" />
+  const mobileNumber = settings?.mobileBankingNumber || settings?.ownerPhone;
+  const stockIssue = quote && quote.problems && quote.problems.find(p => p.reason === 'stock');
+
+  return (
+    <Modal open onClose={onClose} label="Checkout" size="max-w-6xl">
+      <form onSubmit={submit} className="grid lg:grid-cols-[1.25fr_1fr]">
+        {/* Details */}
+        <div className="px-6 sm:px-12 py-12">
+          <h2 className="font-display text-[36px] leading-none text-ink">Checkout</h2>
+          {!account && (
+            <p className="mt-4 text-[14px] text-muted">
+              Checking out as a guest.{' '}
+              <button type="button" onClick={onSignIn} className="link-underline text-ink">Sign in</button>{' '}
+              to use your saved details.
+            </p>
+          )}
+
+          <fieldset className="mt-10">
+            <legend className="label text-ink">Contact</legend>
+            <div className="mt-5 grid sm:grid-cols-2 gap-x-8 gap-y-6">
+              <Field label="Full name" name="name" value={form.name} onChange={set} autoComplete="name" required />
+              <Field label="Phone" name="phone" type="tel" value={form.phone} onChange={set} autoComplete="tel" placeholder="01XXX-XXXXXX" required />
+              <Field
+                className="sm:col-span-2"
+                label="Email (for order updates, optional)"
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={set}
+                autoComplete="email"
+              />
             </div>
+          </fieldset>
 
-            <div>
-              <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-[#fdf5e6] text-[#997316] border border-[#e8cda2] mb-2">
-                Order #{placedOrder.id}
-              </span>
-              <h3 className="font-serif-luxury text-2xl font-bold text-stone-900">
-                Thank You, {placedOrder.customer.name}!
-              </h3>
-              <p className="text-xs text-stone-600 mt-1 max-w-md mx-auto">
-                Your order has been recorded successfully. An email alert has been sent to the store owner at <strong className="text-stone-800">{settings?.ownerEmail || 'maishamonsura@gmail.com'}</strong>.
-              </p>
-            </div>
-
-            {/* Notification Callout */}
-            <div className="bg-[#fcf9f4] border border-[#e8d5c4] rounded-xl p-4 text-left text-xs space-y-2 max-w-lg mx-auto">
-              <div className="flex items-center gap-2 font-bold text-[#8c600b]">
-                <span>🔔 Customer Notification Alert:</span>
+          <fieldset className="mt-12">
+            <legend className="label text-ink">Delivery</legend>
+            <div className="mt-5 grid gap-y-6">
+              <Field label="Address" as="textarea" rows={2} name="address" value={form.address} onChange={set} autoComplete="street-address" placeholder="House, road, area" required />
+              <div className="grid sm:grid-cols-2 gap-3">
+                {AREAS.map(area => {
+                  const fee = area === 'Inside Dhaka' ? settings?.shippingDhaka : settings?.shippingOutsideDhaka;
+                  const active = form.city === area;
+                  return (
+                    <label key={area} className={`flex items-center justify-between gap-3 border px-4 py-4 transition-colors ${active ? 'border-ink' : 'border-line hover:border-muted'}`}>
+                      <span className="flex items-center gap-3">
+                        <input type="radio" name="city" value={area} checked={active} onChange={set} className="accent-[var(--color-ink)]" />
+                        <span className="text-[14px] text-ink">{area}</span>
+                      </span>
+                      <span className="text-[13px] text-muted tabular-nums">
+                        {fee !== undefined ? formatPrice(fee) : ''} · {area === 'Inside Dhaka' ? '1–2 days' : '2–3 days'}
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
-              <p className="text-stone-600 leading-relaxed">
-                We sent an instant receipt to <strong>{placedOrder.customer.email}</strong>. As soon as the shop owner reviews and accepts your order in the dashboard, you will receive another email notification with tracking details!
-              </p>
+              <Field label="Note for the courier (optional)" name="notes" value={form.notes} onChange={set} maxLength={300} />
             </div>
+          </fieldset>
 
-            {/* Order Recap */}
-            <div className="bg-stone-50 rounded-xl p-4 text-xs text-left border border-stone-200 max-w-lg mx-auto space-y-2">
-              <div className="flex justify-between border-b border-stone-200 pb-2 font-semibold">
-                <span>Total Amount:</span>
-                <span className="text-[#997316] font-bold text-sm">৳{placedOrder.total.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between text-stone-600">
-                <span>Payment Method:</span>
-                <span>{placedOrder.paymentMethod}</span>
-              </div>
-              <div className="flex justify-between text-stone-600">
-                <span>Shipping Address:</span>
-                <span className="text-right max-w-xs">{placedOrder.customer.address} ({placedOrder.customer.city})</span>
-              </div>
+          <fieldset className="mt-12">
+            <legend className="label text-ink">Payment</legend>
+            <div className="mt-5 grid sm:grid-cols-2 gap-3">
+              {[
+                ['Cash on Delivery', 'Cash on delivery', 'Pay when your order arrives'],
+                ['Mobile Banking', 'bKash / Nagad', 'Pay now by Send Money']
+              ].map(([value, title, sub]) => {
+                const active = form.paymentMethod === value;
+                return (
+                  <label key={value} className={`flex items-start gap-3 border px-4 py-4 transition-colors ${active ? 'border-ink' : 'border-line hover:border-muted'}`}>
+                    <input type="radio" name="paymentMethod" value={value} checked={active} onChange={set} className="mt-1 accent-[var(--color-ink)]" />
+                    <span>
+                      <span className="block text-[14px] text-ink">{title}</span>
+                      <span className="block text-[13px] text-muted">{sub}</span>
+                    </span>
+                  </label>
+                );
+              })}
             </div>
-
-            <div className="pt-2 flex flex-col sm:flex-row justify-center gap-3">
-              <button
-                onClick={onClose}
-                className="px-6 py-2.5 bg-[#1f1d1d] hover:bg-stone-800 text-[#e6c89c] text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer"
-              >
-                Back to Shop
-              </button>
-            </div>
-          </div>
-        ) : (
-          /* Checkout Form */
-          <form onSubmit={handleSubmit} className="p-6 space-y-5">
-            {error && (
-              <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{error}</span>
+            {form.paymentMethod === 'Mobile Banking' && (
+              <div className="mt-5 bg-sand/60 px-5 py-5 anim-fade">
+                <p className="text-[14px] text-ink-soft leading-relaxed">
+                  Send {quote ? formatPrice(quote.total) : 'the total'} to <span className="text-ink font-normal">{mobileNumber}</span> (bKash or Nagad, Send Money),
+                  then enter the transaction ID below. We confirm payments before dispatch.
+                </p>
+                <Field className="mt-4" label="Transaction ID" name="trxId" value={form.trxId} onChange={set} maxLength={40} />
               </div>
             )}
+          </fieldset>
+        </div>
 
-            {/* Contact & Shipping Details */}
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-stone-800 mb-3 flex items-center gap-1.5">
-                <Truck className="w-4 h-4 text-[#c59b27]" />
-                <span>1. Shipping & Contact Information</span>
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-semibold text-stone-600 mb-1">
-                    Full Name <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    required
-                    placeholder="e.g. Sadia Rahman"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 text-xs bg-stone-50 border border-[#ebdcd3] rounded-lg focus:outline-none focus:border-[#c59b27] focus:bg-white"
-                  />
+        {/* Summary */}
+        <aside className="bg-sand/50 px-6 sm:px-12 py-12 lg:border-l border-line">
+          <h3 className="label text-ink">Order summary</h3>
+          <ul className="mt-6 space-y-5">
+            {items.map(({ product, quantity }) => (
+              <li key={product.id} className="flex gap-4">
+                <div className="relative w-16 h-16 bg-sand shrink-0 overflow-hidden">
+                  <ProductImage src={product.image} alt="" className="w-full h-full object-cover" />
                 </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-display text-[17px] leading-snug text-ink">{product.name}</p>
+                  <p className="text-[13px] text-muted">Qty {quantity}</p>
+                </div>
+                <p className="text-[14px] tabular-nums">{formatPrice(product.price * quantity)}</p>
+              </li>
+            ))}
+          </ul>
 
-                <div>
-                  <label className="block text-[11px] font-semibold text-stone-600 mb-1">
-                    Phone Number <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    required
-                    placeholder="e.g. 01712-345678"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 text-xs bg-stone-50 border border-[#ebdcd3] rounded-lg focus:outline-none focus:border-[#c59b27] focus:bg-white"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-[11px] font-semibold text-stone-600 mb-1">
-                    Email Address (for order acceptance notifications) <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    required
-                    placeholder="e.g. yourname@gmail.com"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 text-xs bg-stone-50 border border-[#ebdcd3] rounded-lg focus:outline-none focus:border-[#c59b27] focus:bg-white"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-[11px] font-semibold text-stone-600 mb-1">
-                    Full Delivery Address <span className="text-rose-500">*</span>
-                  </label>
-                  <textarea
-                    rows={2}
-                    name="address"
-                    required
-                    placeholder="House, Road, Area, Landmark (e.g. House 12, Road 4, Block D, Bashundhara R/A)"
-                    value={formData.address}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 text-xs bg-stone-50 border border-[#ebdcd3] rounded-lg focus:outline-none focus:border-[#c59b27] focus:bg-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-semibold text-stone-600 mb-1">
-                    Delivery Area
-                  </label>
-                  <select
-                    name="city"
-                    value={formData.city}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 text-xs bg-stone-50 border border-[#ebdcd3] rounded-lg focus:outline-none focus:border-[#c59b27] focus:bg-white"
-                  >
-                    <option value="Inside Dhaka">Inside Dhaka (৳70 • 24-48 Hours)</option>
-                    <option value="Outside Dhaka">Outside Dhaka (৳130 • 2-3 Days)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-semibold text-stone-600 mb-1">
-                    Special Note / Instruction (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    name="notes"
-                    placeholder="e.g. Call before delivery"
-                    value={formData.notes}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 text-xs bg-stone-50 border border-[#ebdcd3] rounded-lg focus:outline-none focus:border-[#c59b27] focus:bg-white"
-                  />
-                </div>
-              </div>
+          <dl className="mt-8 pt-6 border-t border-line space-y-2.5 text-[14px]">
+            <div className="flex justify-between"><dt className="text-muted">Subtotal</dt><dd className="tabular-nums">{quote ? formatPrice(quote.subtotal) : '—'}</dd></div>
+            {quote && quote.discount > 0 && (
+              <div className="flex justify-between"><dt className="text-muted">{quote.coupon.code}</dt><dd className="tabular-nums">−{formatPrice(quote.discount)}</dd></div>
+            )}
+            <div className="flex justify-between">
+              <dt className="text-muted">Delivery · {form.city}</dt>
+              <dd className="tabular-nums">{quote ? (quote.shipping === 0 ? 'Complimentary' : formatPrice(quote.shipping)) : '—'}</dd>
             </div>
-
-            {/* Payment Method */}
-            <div className="pt-2">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-stone-800 mb-3 flex items-center gap-1.5">
-                <Banknote className="w-4 h-4 text-[#c59b27]" />
-                <span>2. Select Payment Method</span>
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                <label className={`p-3 rounded-xl border flex flex-col items-center text-center cursor-pointer transition-all ${
-                  formData.paymentMethod === 'Cash on Delivery'
-                    ? 'border-[#c59b27] bg-[#fdfaf3] shadow-xs'
-                    : 'border-stone-200 bg-stone-50 hover:bg-stone-100'
-                }`}>
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="Cash on Delivery"
-                    checked={formData.paymentMethod === 'Cash on Delivery'}
-                    onChange={handleChange}
-                    className="sr-only"
-                  />
-                  <Banknote className="w-5 h-5 text-[#c59b27] mb-1.5" />
-                  <span className="text-xs font-bold text-stone-900">Cash on Delivery</span>
-                  <span className="text-[10px] text-stone-500 mt-0.5">Pay when bag arrives</span>
-                </label>
-
-                <label className={`p-3 rounded-xl border flex flex-col items-center text-center cursor-pointer transition-all ${
-                  formData.paymentMethod === 'bKash / Nagad'
-                    ? 'border-[#c59b27] bg-[#fdfaf3] shadow-xs'
-                    : 'border-stone-200 bg-stone-50 hover:bg-stone-100'
-                }`}>
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="bKash / Nagad"
-                    checked={formData.paymentMethod === 'bKash / Nagad'}
-                    onChange={handleChange}
-                    className="sr-only"
-                  />
-                  <Smartphone className="w-5 h-5 text-[#c59b27] mb-1.5" />
-                  <span className="text-xs font-bold text-stone-900">bKash / Nagad</span>
-                  <span className="text-[10px] text-stone-500 mt-0.5">Mobile Banking</span>
-                </label>
-
-                <label className={`p-3 rounded-xl border flex flex-col items-center text-center cursor-pointer transition-all ${
-                  formData.paymentMethod === 'Card Payment'
-                    ? 'border-[#c59b27] bg-[#fdfaf3] shadow-xs'
-                    : 'border-stone-200 bg-stone-50 hover:bg-stone-100'
-                }`}>
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="Card Payment"
-                    checked={formData.paymentMethod === 'Card Payment'}
-                    onChange={handleChange}
-                    className="sr-only"
-                  />
-                  <CreditCard className="w-5 h-5 text-[#c59b27] mb-1.5" />
-                  <span className="text-xs font-bold text-stone-900">Debit / Credit Card</span>
-                  <span className="text-[10px] text-stone-500 mt-0.5">Visa / Mastercard</span>
-                </label>
-              </div>
-
-              {formData.paymentMethod === 'bKash / Nagad' && (
-                <div className="mt-3 p-3 bg-[#faf3ea] rounded-xl border border-[#edd7c2] text-xs space-y-1 text-[#5c4436]">
-                  <p className="font-bold text-[#8f620e]">📱 Mobile Banking Instructions:</p>
-                  <p>Send Send-Money to Masfeeh Official bKash/Nagad: <strong>01303-662891</strong></p>
-                  <div className="pt-2">
-                    <label className="block text-[11px] font-semibold text-stone-700 mb-1">
-                      Enter Transaction ID (TrxID)
-                    </label>
-                    <input
-                      type="text"
-                      name="trxId"
-                      placeholder="e.g. 9JA72B9X"
-                      value={formData.trxId}
-                      onChange={handleChange}
-                      className="w-full px-3 py-1.5 text-xs bg-white border border-[#ebdcd3] rounded-lg uppercase"
-                    />
-                  </div>
-                </div>
-              )}
+            <div className="flex justify-between pt-4 mt-2 border-t border-line text-[16px]">
+              <dt className="font-normal">Total</dt>
+              <dd className="tabular-nums font-normal">{quote ? formatPrice(quote.total) : '—'}</dd>
             </div>
+          </dl>
 
-            {/* Total Summary Breakdown */}
-            <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200 text-xs space-y-1.5">
-              <div className="flex justify-between text-stone-600">
-                <span>Subtotal ({cartItems.reduce((acc, i) => acc + i.quantity, 0)} items):</span>
-                <span>৳{subtotal.toLocaleString()}</span>
-              </div>
-              {discountAmount > 0 && (
-                <div className="flex justify-between text-emerald-600 font-medium">
-                  <span>Discount ({discountCode}):</span>
-                  <span>-৳{discountAmount.toLocaleString()}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-stone-600">
-                <span>Delivery Charge ({formData.city}):</span>
-                <span>{actualShipping === 0 ? 'FREE' : `৳${actualShipping}`}</span>
-              </div>
-              <div className="flex justify-between text-sm font-bold text-stone-900 border-t border-stone-200 pt-2">
-                <span>Grand Total:</span>
-                <span className="text-[#997316] font-bold text-base">৳{grandTotal.toLocaleString()}</span>
-              </div>
-            </div>
+          {stockIssue && (
+            <p className="mt-6 text-[13px] text-danger">
+              Only {stockIssue.available} of “{stockIssue.name}” available. Please adjust your bag.
+            </p>
+          )}
+          {error && <p className="mt-6 text-[13px] text-danger" role="alert">{error}</p>}
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-3.5 bg-[#1f1d1d] hover:bg-[#382f29] text-[#e6c89c] font-bold text-xs sm:text-sm rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
-            >
-              {isSubmitting ? (
-                <span>Placing your order...</span>
-              ) : (
-                <>
-                  <span>Confirm Order (৳{grandTotal.toLocaleString()})</span>
-                  <ArrowRight className="w-4 h-4 text-[#d4af37]" />
-                </>
-              )}
-            </button>
-          </form>
-        )}
-      </div>
-    </div>
+          <button
+            type="submit"
+            className="btn-primary w-full mt-8"
+            disabled={submitting || loading || !quote || Boolean(stockIssue) || items.length === 0}
+          >
+            {submitting ? <Spinner /> : `Place order${quote ? ` · ${formatPrice(quote.total)}` : ''}`}
+          </button>
+          <p className="mt-4 text-[12px] text-muted text-center">
+            You will receive a call to confirm your order before dispatch.
+          </p>
+        </aside>
+      </form>
+    </Modal>
   );
 }

@@ -9,6 +9,7 @@ const fs = require('fs');
 const store = require('./data/store');
 const emailService = require('./services/emailService');
 const auth = require('./services/auth');
+const pricing = require('./services/pricing');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -36,8 +37,19 @@ if (!process.env.VERCEL) {
 
 const PUBLIC_SETTING_KEYS = [
   'shopName', 'tagline', 'slogan', 'ownerEmail', 'ownerPhone', 'address', 'currency',
-  'shippingDhaka', 'shippingOutsideDhaka', 'facebookUrl', 'instagramUrl'
+  'shippingDhaka', 'shippingOutsideDhaka', 'freeShippingThreshold', 'mobileBankingNumber',
+  'facebookUrl', 'instagramUrl'
 ];
+
+const EMAIL_RE = /^[^\s@<>"']{1,64}@[^\s@<>"']{1,190}\.[a-zA-Z]{2,}$/;
+
+// Customer account as returned to the browser
+function accountView(c) {
+  return {
+    id: c.id, email: c.email, name: c.name, phone: c.phone || '',
+    address: c.address || '', city: c.city || 'Inside Dhaka', cart: c.cart || []
+  };
+}
 
 // What an anonymous visitor may see when tracking an order (no full address/phone/email)
 function publicOrderView(order) {
@@ -61,7 +73,7 @@ function validateOrderInput({ customer, items }) {
   if (!customer || !str(customer.name, 100) || !str(customer.phone, 30) || !str(customer.address, 500)) {
     return 'Customer name, phone, and address are required';
   }
-  if (customer.email && !/^[^\s@<>"']{1,64}@[^\s@<>"']{1,190}\.[a-zA-Z]{2,}$/.test(customer.email)) {
+  if (customer.email && !EMAIL_RE.test(customer.email)) {
     return 'Please enter a valid email address';
   }
   for (const k of ['city', 'notes']) {
@@ -121,6 +133,90 @@ app.post('/api/auth/change-password', auth.requireAdmin, h(async (req, res) => {
   await store.updateAdminPassword(user.id, passwordHash);
   // Old sessions (incl. this one) are now invalid: hand back a fresh token
   res.json({ success: true, token: auth.signToken({ ...user, password_hash: passwordHash }) });
+}));
+
+// ---------------- CUSTOMER ACCOUNTS (optional) ---------------- //
+
+app.post('/api/account/signup', h(async (req, res) => {
+  const { name, email, phone, password, cart } = req.body || {};
+  if (!str(name, 100)) return res.status(400).json({ error: 'Please enter your name' });
+  if (!email || !EMAIL_RE.test(email)) return res.status(400).json({ error: 'Please enter a valid email address' });
+  if (!password || String(password).length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters' });
+  }
+  if (phone && !str(phone, 30)) return res.status(400).json({ error: 'Invalid phone number' });
+
+  let customer;
+  try {
+    customer = await store.createCustomer({
+      email, name: name.trim(), phone: phone ? phone.trim() : null, passwordHash: auth.hashPassword(password)
+    });
+  } catch (err) {
+    if (err.status === 409) return res.status(409).json({ error: err.message });
+    throw err;
+  }
+  // Keep whatever the shopper had in their bag before signing up
+  const saved = pricing.normalizeItems(cart);
+  if (saved.length) customer = await store.updateCustomer(customer.id, { cart: saved });
+  res.status(201).json({ token: auth.signToken(customer, 'customer'), account: accountView(customer) });
+}));
+
+app.post('/api/account/login', h(async (req, res) => {
+  const { email, password } = req.body || {};
+  if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
+  const customer = await store.getCustomerByEmail(email);
+  if (!customer || !auth.verifyPassword(password, customer.password_hash)) {
+    return res.status(401).json({ error: 'Wrong email or password' });
+  }
+  res.json({ token: auth.signToken(customer, 'customer'), account: accountView(customer) });
+}));
+
+app.get('/api/account', auth.requireCustomer, (req, res) => {
+  res.json({ account: accountView(req.customer) });
+});
+
+app.put('/api/account', auth.requireCustomer, h(async (req, res) => {
+  const { name, phone, address, city } = req.body || {};
+  const patch = {};
+  if (name !== undefined) {
+    if (!str(name, 100)) return res.status(400).json({ error: 'Please enter your name' });
+    patch.name = name.trim();
+  }
+  if (phone !== undefined) {
+    if (phone !== '' && !str(phone, 30)) return res.status(400).json({ error: 'Invalid phone number' });
+    patch.phone = phone.trim();
+  }
+  if (address !== undefined) {
+    if (address !== '' && !str(address, 500)) return res.status(400).json({ error: 'Invalid address' });
+    patch.address = address.trim();
+  }
+  if (city !== undefined) patch.city = pricing.AREAS.includes(city) ? city : 'Inside Dhaka';
+  const updated = await store.updateCustomer(req.customer.id, patch);
+  res.json({ account: accountView(updated) });
+}));
+
+// Saved bag: [{id, quantity}]. Prices always come from /api/quote.
+app.put('/api/account/cart', auth.requireCustomer, h(async (req, res) => {
+  const cart = pricing.normalizeItems(req.body && req.body.cart).slice(0, 50);
+  const updated = await store.updateCustomer(req.customer.id, { cart });
+  res.json({ cart: updated.cart });
+}));
+
+app.get('/api/account/orders', auth.requireCustomer, h(async (req, res) => {
+  res.json(await store.getOrdersByCustomer(req.customer.id));
+}));
+
+app.post('/api/account/change-password', auth.requireCustomer, h(async (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  if (!newPassword || String(newPassword).length < 8) {
+    return res.status(400).json({ error: 'New password must be at least 8 characters' });
+  }
+  const full = await store.getCustomerById(req.customer.id);
+  if (!auth.verifyPassword(currentPassword || '', full.password_hash)) {
+    return res.status(401).json({ error: 'Current password is wrong' });
+  }
+  const updated = await store.updateCustomer(full.id, { password_hash: auth.hashPassword(newPassword) });
+  res.json({ success: true, token: auth.signToken(updated, 'customer') });
 }));
 
 // ---------------- PRODUCTS (read: public, write: admin) ---------------- //
@@ -246,46 +342,117 @@ app.get('/api/orders/:id', h(async (req, res) => {
   const order = await store.getOrderById(req.params.id);
   if (!order) return res.status(404).json({ error: 'Order not found' });
   const user = await auth.getUserFromRequest(req).catch(() => null);
-  res.json(user ? order : publicOrderView(order));
+  const customer = user ? null : await auth.getCustomerFromRequest(req).catch(() => null);
+  const isOwnOrder = customer && order.customerId === customer.id;
+  res.json(user || isOwnOrder ? order : publicOrderView(order));
 }));
 
-// Place order: public
+// Price a cart (used by the bag and checkout so the shopper sees exactly what the server will charge)
+app.post('/api/quote', h(async (req, res) => {
+  const { items, city, coupon } = req.body || {};
+  res.json(await pricing.quote({ items, city, coupon }));
+}));
+
+// Place order: guests or signed-in customers. Prices are computed here, never trusted from the browser.
 app.post('/api/orders', h(async (req, res) => {
-  const { customer, items, subtotal, shipping, discount, total, paymentMethod } = req.body;
+  const { customer, items, coupon, paymentMethod, trxId } = req.body || {};
 
   const invalid = validateOrderInput(req.body);
   if (invalid) return res.status(400).json({ error: invalid });
 
-  const newOrder = await store.addOrder({
-    customer,
-    items,
-    subtotal: Number(subtotal),
-    shipping: Number(shipping || 70),
-    discount: Number(discount || 0),
-    total: Number(total),
-    paymentMethod: paymentMethod || 'Cash on Delivery'
-  });
+  const q = await pricing.quote({ items, city: customer.city, coupon });
+  if (q.items.length === 0) {
+    return res.status(400).json({ error: 'Your bag is empty or the items are no longer available.' });
+  }
+  if (q.problems.length > 0) {
+    const p = q.problems[0];
+    return res.status(409).json({
+      error: p.reason === 'stock'
+        ? `Only ${p.available} of "${p.name}" left. Please update your bag.`
+        : 'Some items in your bag are no longer available. Please review your bag.',
+      quote: q
+    });
+  }
+  if (coupon && q.couponError) return res.status(400).json({ error: `Coupon: ${q.couponError}` });
+
+  const method = paymentMethod === 'Mobile Banking'
+    ? `Mobile Banking (bKash/Nagad)${trxId ? ` · TrxID ${String(trxId).trim().slice(0, 40)}` : ' · TrxID pending'}`
+    : 'Cash on Delivery';
+
+  const account = await auth.getCustomerFromRequest(req).catch(() => null);
+  const stockItems = q.items.map(i => ({ id: i.id, quantity: i.quantity }));
+
+  try {
+    await store.reserveStock(stockItems);
+  } catch (err) {
+    if (err.outOfStockId) {
+      return res.status(409).json({ error: 'An item in your bag just sold out. Please review your bag.' });
+    }
+    throw err;
+  }
+
+  let newOrder;
+  try {
+    newOrder = await store.addOrder({
+      customer: {
+        name: customer.name.trim(),
+        phone: customer.phone.trim(),
+        email: (customer.email || (account && account.email) || '').trim(),
+        address: customer.address.trim(),
+        city: q.area,
+        notes: (customer.notes || '').trim()
+      },
+      items: q.items.map(({ id, name, price, quantity, image }) => ({ id, name, price, quantity, image })),
+      subtotal: q.subtotal,
+      shipping: q.shipping,
+      discount: q.discount,
+      total: q.total,
+      paymentMethod: method,
+      customerId: account ? account.id : null
+    });
+  } catch (err) {
+    await store.releaseStock(stockItems).catch(e => console.error('Stock release failed:', e));
+    throw err;
+  }
+
+  // Signed-in shoppers: remember their delivery details and empty their saved bag
+  if (account) {
+    await store.updateCustomer(account.id, {
+      phone: newOrder.customer.phone,
+      address: newOrder.customer.address,
+      city: newOrder.customer.city,
+      cart: []
+    }).catch(e => console.error('Profile update after order failed:', e));
+  }
 
   // Await emails: serverless functions may be frozen once the response is sent.
   // Failures are logged but never fail the order.
   const emailJobs = [emailService.sendNewOrderAlertToOwner(newOrder)];
-  if (customer.email) emailJobs.push(emailService.sendOrderConfirmationToCustomer(newOrder));
+  if (newOrder.customer.email) emailJobs.push(emailService.sendOrderConfirmationToCustomer(newOrder));
   const results = await Promise.allSettled(emailJobs);
   results.filter(r => r.status === 'rejected').forEach(r => console.error('Order email failed:', r.reason));
 
-  res.status(201).json({
-    success: true,
-    order: newOrder, // the customer who just ordered sees their own full details
-    message: 'Order placed successfully! Owner has been alerted via email.'
-  });
+  res.status(201).json({ success: true, order: newOrder });
 }));
 
 app.patch('/api/orders/:id/status', auth.requireAdmin, h(async (req, res) => {
   const { status, note, courier } = req.body;
   if (!status) return res.status(400).json({ error: 'Status is required' });
 
-  const order = await store.updateOrderStatus(req.params.id, status, note, courier);
-  if (!order) return res.status(404).json({ error: 'Order not found' });
+  const before = await store.getOrderById(req.params.id);
+  if (!before) return res.status(404).json({ error: 'Order not found' });
+  const order = await store.updateOrderStatus(before.id, status, note, courier);
+
+  // Put stock back when an order is cancelled (and take it again if it is revived)
+  const wasCancelled = before.status === 'Cancelled';
+  const isCancelled = status === 'Cancelled';
+  const stockItems = (order.items || []).map(i => ({ id: i.id, quantity: Number(i.quantity) || 0 }))
+    .filter(i => i.quantity > 0);
+  if (!wasCancelled && isCancelled) {
+    await store.releaseStock(stockItems).catch(e => console.error('Restock failed:', e));
+  } else if (wasCancelled && !isCancelled) {
+    await store.reserveStock(stockItems).catch(e => console.error('Re-reserve failed:', e));
+  }
 
   if (['accepted', 'accept'].includes(status.toLowerCase()) && order.customer && order.customer.email) {
     await emailService.sendOrderAcceptedNotificationToCustomer(order)
