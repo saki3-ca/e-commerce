@@ -8,7 +8,7 @@ import {
 import { api } from '../services/api';
 import BrandLogo from './BrandLogo';
 
-export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSettings }) {
+export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSettings, user, onLogout }) {
   const [activeTab, setActiveTab] = useState('orders'); // orders, products, add-product, emails, settings
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
@@ -252,7 +252,7 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
                 </span>
               </div>
               <p className="text-[11px] text-stone-400">
-                Logged in as Owner • {settings?.ownerEmail || 'maishamonsura@gmail.com'}
+                Logged in as {user?.role === 'owner' ? 'Owner' : 'Admin'} • {user?.email || settings?.ownerEmail}
               </p>
             </div>
           </div>
@@ -272,6 +272,13 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
             >
               <ExternalLink className="w-3.5 h-3.5 text-[#c59b27]" />
               <span>Back to Customer Store</span>
+            </button>
+
+            <button
+              onClick={onLogout}
+              className="px-3.5 py-2 bg-stone-800/80 hover:bg-stone-700 text-stone-200 text-xs font-bold rounded-lg transition-all cursor-pointer"
+            >
+              Log out
             </button>
           </div>
         </div>

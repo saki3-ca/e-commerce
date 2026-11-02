@@ -1,127 +1,73 @@
 const API_BASE = '/api';
+const TOKEN_KEY = 'masfeeh_admin_token';
+
+export const auth = {
+  getToken: () => localStorage.getItem(TOKEN_KEY),
+  setToken: token => localStorage.setItem(TOKEN_KEY, token),
+  clear: () => localStorage.removeItem(TOKEN_KEY),
+  // Called when the server rejects the session (expired / logged out elsewhere)
+  onUnauthorized: () => {}
+};
+
+async function request(path, { method = 'GET', body, json, fallbackError } = {}) {
+  const headers = {};
+  const token = auth.getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (json !== undefined) {
+    headers['Content-Type'] = 'application/json';
+    body = JSON.stringify(json);
+  }
+
+  const res = await fetch(`${API_BASE}${path}`, { method, headers, body });
+  const data = await res.json().catch(() => ({}));
+
+  if (res.status === 401 && token && !path.startsWith('/auth/login')) {
+    auth.clear();
+    auth.onUnauthorized();
+  }
+  if (!res.ok) throw new Error(data.error || fallbackError || 'Request failed');
+  return data;
+}
+
+const qs = params => {
+  const query = new URLSearchParams(params).toString();
+  return query ? `?${query}` : '';
+};
 
 export const api = {
+  // Auth
+  login: (email, password) =>
+    request('/auth/login', { method: 'POST', json: { email, password }, fallbackError: 'Login failed' }),
+  me: () => request('/auth/me'),
+  changePassword: (currentPassword, newPassword) =>
+    request('/auth/change-password', { method: 'POST', json: { currentPassword, newPassword } }),
+
   // Products
-  async getProducts(params = {}) {
-    const query = new URLSearchParams(params).toString();
-    const res = await fetch(`${API_BASE}/products${query ? `?${query}` : ''}`);
-    if (!res.ok) throw new Error('Failed to fetch products');
-    return res.json();
-  },
-
-  async getProduct(id) {
-    const res = await fetch(`${API_BASE}/products/${id}`);
-    if (!res.ok) throw new Error('Failed to fetch product');
-    return res.json();
-  },
-
-  async addProduct(formData) {
-    const res = await fetch(`${API_BASE}/products`, {
-      method: 'POST',
-      body: formData // can be FormData for file upload
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'Failed to add product' }));
-      throw new Error(err.error || 'Failed to add product');
-    }
-    return res.json();
-  },
-
-  async updateProduct(id, formData) {
-    const res = await fetch(`${API_BASE}/products/${id}`, {
-      method: 'PUT',
-      body: formData
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'Failed to update product' }));
-      throw new Error(err.error || 'Failed to update product');
-    }
-    return res.json();
-  },
-
-  async deleteProduct(id) {
-    const res = await fetch(`${API_BASE}/products/${id}`, {
-      method: 'DELETE'
-    });
-    if (!res.ok) throw new Error('Failed to delete product');
-    return res.json();
-  },
+  getProducts: (params = {}) => request(`/products${qs(params)}`, { fallbackError: 'Failed to fetch products' }),
+  getProduct: id => request(`/products/${id}`, { fallbackError: 'Failed to fetch product' }),
+  addProduct: formData => request('/products', { method: 'POST', body: formData, fallbackError: 'Failed to add product' }),
+  updateProduct: (id, formData) =>
+    request(`/products/${id}`, { method: 'PUT', body: formData, fallbackError: 'Failed to update product' }),
+  deleteProduct: id => request(`/products/${id}`, { method: 'DELETE', fallbackError: 'Failed to delete product' }),
 
   // Orders
-  async getOrders(params = {}) {
-    const query = new URLSearchParams(params).toString();
-    const res = await fetch(`${API_BASE}/orders${query ? `?${query}` : ''}`);
-    if (!res.ok) throw new Error('Failed to fetch orders');
-    return res.json();
-  },
-
-  async getOrder(id) {
-    const res = await fetch(`${API_BASE}/orders/${encodeURIComponent(id)}`);
-    if (!res.ok) throw new Error('Order not found');
-    return res.json();
-  },
-
-  async createOrder(orderData) {
-    const res = await fetch(`${API_BASE}/orders`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(orderData)
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'Failed to create order' }));
-      throw new Error(err.error || 'Failed to create order');
-    }
-    return res.json();
-  },
-
-  async updateOrderStatus(id, status, note, courier) {
-    const res = await fetch(`${API_BASE}/orders/${encodeURIComponent(id)}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status, note, courier })
-    });
-    if (!res.ok) throw new Error('Failed to update order status');
-    return res.json();
-  },
+  getOrders: (params = {}) => request(`/orders${qs(params)}`, { fallbackError: 'Failed to fetch orders' }),
+  getOrder: id => request(`/orders/${encodeURIComponent(id)}`, { fallbackError: 'Order not found' }),
+  createOrder: orderData =>
+    request('/orders', { method: 'POST', json: orderData, fallbackError: 'Failed to create order' }),
+  updateOrderStatus: (id, status, note, courier) =>
+    request(`/orders/${encodeURIComponent(id)}/status`, {
+      method: 'PATCH', json: { status, note, courier }, fallbackError: 'Failed to update order status'
+    }),
 
   // Emails & Settings
-  async getEmails() {
-    const res = await fetch(`${API_BASE}/emails`);
-    if (!res.ok) throw new Error('Failed to fetch emails');
-    return res.json();
-  },
-
-  async getSettings() {
-    const res = await fetch(`${API_BASE}/settings`);
-    if (!res.ok) throw new Error('Failed to fetch settings');
-    return res.json();
-  },
-
-  async updateSettings(settings) {
-    const res = await fetch(`${API_BASE}/settings`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(settings)
-    });
-    if (!res.ok) throw new Error('Failed to update settings');
-    return res.json();
-  },
-
-  async testSmtp(targetEmail) {
-    const res = await fetch(`${API_BASE}/settings/test-email`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ targetEmail })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'SMTP test failed');
-    return data;
-  },
+  getEmails: () => request('/emails', { fallbackError: 'Failed to fetch emails' }),
+  getSettings: () => request('/settings', { fallbackError: 'Failed to fetch settings' }),
+  updateSettings: settings =>
+    request('/settings', { method: 'PUT', json: settings, fallbackError: 'Failed to update settings' }),
+  testSmtp: targetEmail =>
+    request('/settings/test-email', { method: 'POST', json: { targetEmail }, fallbackError: 'SMTP test failed' }),
 
   // Stats
-  async getStats() {
-    const res = await fetch(`${API_BASE}/stats`);
-    if (!res.ok) throw new Error('Failed to fetch stats');
-    return res.json();
-  }
+  getStats: () => request('/stats', { fallbackError: 'Failed to fetch stats' })
 };

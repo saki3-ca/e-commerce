@@ -3,7 +3,7 @@ const store = require('../data/store');
 
 class EmailService {
   getTransporter() {
-    const settings = store.getSettings();
+    const settings = this.settings || {};
     if (settings.smtpHost && settings.smtpUser && settings.smtpPass) {
       return nodemailer.createTransport({
         host: settings.smtpHost,
@@ -20,7 +20,7 @@ class EmailService {
 
   // Base email styling wrapper
   renderLayout(content, preheader = '') {
-    const settings = store.getSettings();
+    const settings = this.settings || {};
     return `
       <!DOCTYPE html>
       <html>
@@ -70,7 +70,7 @@ class EmailService {
 
   // 1. EMAIL TO OWNER: On new customer order
   async sendNewOrderAlertToOwner(order) {
-    const settings = store.getSettings();
+    const settings = this.settings = await store.getSettings();
     const recipient = settings.ownerEmail || 'maishamonsura@gmail.com';
     const subject = `[Masfeeh] 🛍️ New Order #${order.id} Received - ৳${order.total.toLocaleString()} from ${order.customer.name}`;
 
@@ -155,6 +155,7 @@ class EmailService {
 
   // 2. EMAIL TO CUSTOMER: Order Confirmation receipt
   async sendOrderConfirmationToCustomer(order) {
+    this.settings = await store.getSettings();
     const recipient = order.customer.email;
     if (!recipient) return null;
 
@@ -236,6 +237,7 @@ class EmailService {
 
   // 3. EMAIL TO CUSTOMER: When Owner ACCEPTS the order! (Key user requirement)
   async sendOrderAcceptedNotificationToCustomer(order) {
+    this.settings = await store.getSettings();
     const recipient = order.customer.email;
     if (!recipient) return null;
 
@@ -312,7 +314,7 @@ class EmailService {
 
   // 4. Dispatch helper: sends via nodemailer if configured, logs to store
   async dispatchEmail({ to, subject, html, type, orderId }) {
-    const settings = store.getSettings();
+    const settings = this.settings || (this.settings = await store.getSettings());
     const transporter = this.getTransporter();
     let status = 'Delivered (Simulated)';
     let errorDetail = null;
@@ -336,7 +338,7 @@ class EmailService {
       console.log(`[EmailService] SMTP not set up yet. Logged to system outbox for ${to}`);
     }
 
-    const logRecord = store.addEmailLog({
+    const logRecord = await store.addEmailLog({
       to,
       subject,
       html,
@@ -351,11 +353,12 @@ class EmailService {
 
   // Test email configuration
   async testSmtp(testTargetEmail) {
+    this.settings = await store.getSettings();
     const transporter = this.getTransporter();
     if (!transporter) {
       throw new Error('SMTP credentials are not configured. Please fill in Host, User, and Password.');
     }
-    const settings = store.getSettings();
+    const settings = this.settings;
     const subject = `[Masfeeh] SMTP Test Connection Successful! 🌸`;
     const bodyHtml = `
       <div style="text-align: center;">

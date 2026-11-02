@@ -1,368 +1,242 @@
-const fs = require('fs');
-const path = require('path');
+// Supabase-backed data store. All methods are async.
+// Requires SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (server-side secret key).
+const { createClient } = require('@supabase/supabase-js');
+const DEFAULTS = require('./defaults');
 
-const DB_FILE = path.join(__dirname, 'db.json');
+const IMAGE_BUCKET = 'product-images';
 
-const INITIAL_DATA = {
-  settings: {
-    shopName: 'Masfeeh',
-    tagline: 'Accessorize Your World',
-    slogan: 'Little Things... Big Happiness ♡',
-    ownerEmail: 'maishamonsura@gmail.com',
-    ownerPhone: '01303-662891',
-    address: 'Bashundhara R/A, Dhaka, Bangladesh',
-    currency: '৳',
-    shippingDhaka: 70,
-    shippingOutsideDhaka: 130,
-    facebookUrl: 'https://www.facebook.com/profile.php?id=61596179578624',
-    instagramUrl: '',
-    smtpHost: '',
-    smtpPort: 587,
-    smtpUser: '',
-    smtpPass: '',
-    smtpSecure: false,
-    senderName: 'Masfeeh Online Shop'
-  },
-  products: [
-    {
-      id: 'prod-1',
-      name: 'Premium Crossbody Bag - FIOM Monogram',
-      category: 'Bags',
-      price: 1850,
-      originalPrice: 2350,
-      stock: 15,
-      badge: 'Bestseller',
-      image: '/assets/bag_fiom.jpg',
-      images: ['/assets/bag_fiom.jpg', '/assets/bag_main.jpg'],
-      description: 'Premium Cross body bag with both long and short belt. Features our signature FIOM monogram textured finish, high-grade gold-tone hardware, and versatile styling.',
-      features: [
-        'Includes 2 detachable straps (Adjustable Long Shoulder Strap + Chic Short Hand Belt)',
-        'Dual smooth glide gold zipper compartments',
-        'High-density scratch resistant vegan leather',
-        'Dimensions: 21cm x 13cm x 8cm'
-      ],
-      createdAt: '2026-11-01T10:00:00.000Z'
-    },
-    {
-      id: 'prod-2',
-      name: 'Signature Floral Clover Monogram Crossbody',
-      category: 'Bags',
-      price: 1950,
-      originalPrice: 2450,
-      stock: 12,
-      badge: 'New Arrival',
-      image: '/assets/bag_clover.jpg',
-      images: ['/assets/bag_clover.jpg', '/assets/bag_grid.jpg'],
-      description: 'Elegant monogram floral clover pattern with luxury champagne gold accents. Comes with dual belts for shoulder or handbag wear.',
-      features: [
-        'Comes with both long crossbody belt and short handle belt',
-        'Reinforced structured corners for timeless durability',
-        'Interior slip pocket and zip partition',
-        'Dimensions: 22cm x 14cm x 8cm'
-      ],
-      createdAt: '2026-11-01T11:00:00.000Z'
-    },
-    {
-      id: 'prod-3',
-      name: 'Timeless Chocolate Ribbed Leather Crossbody',
-      category: 'Bags',
-      price: 1750,
-      originalPrice: 2150,
-      stock: 18,
-      badge: 'Trending',
-      image: '/assets/bag_brown_solid.jpg',
-      images: ['/assets/bag_brown_solid.jpg'],
-      description: 'Rich chocolate brown minimal crossbody bag with ribbed edge trim and golden hardware. Pairs effortlessly with both ethnic and western attire.',
-      features: [
-        'Includes long crossbody belt and wrist/handlet strap',
-        'Water-resistant textured PU leather',
-        'Golden pull tabs and magnetic snap closure'
-      ],
-      createdAt: '2026-11-01T12:00:00.000Z'
-    },
-    {
-      id: 'prod-4',
-      name: 'Royal Monogram Golden Crest Crossbody',
-      category: 'Bags',
-      price: 1890,
-      originalPrice: 2390,
-      stock: 10,
-      badge: 'Featured',
-      image: '/assets/bag_monogram_gold.jpg',
-      images: ['/assets/bag_monogram_gold.jpg'],
-      description: 'Exclusive golden deer emblem on monogram leather. Comes with long adjustable belt and short hand strap for modern versatility.',
-      features: [
-        'Dual strap set included (long belt + short strap)',
-        'Golden metallic deer logo plaque',
-        'Multiple compartments with luxury lining'
-      ],
-      createdAt: '2026-11-01T13:00:00.000Z'
-    },
-    {
-      id: 'prod-5',
-      name: 'Dainty Pearl & Crystal Hair Bow Set',
-      category: 'Hair Accessories',
-      price: 450,
-      originalPrice: 650,
-      stock: 25,
-      badge: 'Popular',
-      image: '/assets/photo_grid_0_0.jpg',
-      images: ['/assets/photo_grid_0_0.jpg'],
-      description: 'Intricately handcrafted pearl and crystal embellished hair clips and bow set. High-grip teeth that stay secure without pulling.',
-      features: [
-        'Hypoallergenic metal clip',
-        'Hand-strung faux freshwater pearls',
-        'Set includes 3 matching luxury hair accents'
-      ],
-      createdAt: '2026-11-01T14:00:00.000Z'
-    },
-    {
-      id: 'prod-6',
-      name: 'Velvet Rose Gold Royal Bangles Collection',
-      category: 'Bangles & More',
-      price: 1250,
-      originalPrice: 1650,
-      stock: 8,
-      badge: 'Bestseller',
-      image: '/assets/brand_artwork.jpg',
-      images: ['/assets/brand_artwork.jpg'],
-      description: 'Traditional royal craftsmanship with soft velvet texture, golden thread work, and glistening stones. Perfect for festivals, parties, and weddings.',
-      features: [
-        'Set of 24 pieces (12 per hand)',
-        'Sizes available: 2.4, 2.6, 2.8',
-        'Non-tarnish golden alloy and velvet finish'
-      ],
-      createdAt: '2026-11-01T15:00:00.000Z'
-    },
-    {
-      id: 'prod-7',
-      name: 'Salon Gel French Ombre Luxury Press-on Nails',
-      category: 'Fake Nails',
-      price: 520,
-      originalPrice: 750,
-      stock: 30,
-      badge: 'Trending',
-      image: '/assets/photo_grid_1_1.jpg',
-      images: ['/assets/photo_grid_1_1.jpg'],
-      description: 'High-gloss salon finish medium almond press-on nails. Reusable up to 5 times with gentle removal.',
-      features: [
-        '24 nails in 12 universal sizes',
-        'Includes nail glue, adhesive jelly tabs, mini file & cuticle stick',
-        'Wear time: 2-3 weeks with glue, 3-5 days with tabs'
-      ],
-      createdAt: '2026-11-01T16:00:00.000Z'
-    },
-    {
-      id: 'prod-8',
-      name: '18K Gold Plated Stackable Zirconia Rings (Set of 5)',
-      category: 'Rings',
-      price: 680,
-      originalPrice: 950,
-      stock: 20,
-      badge: 'New',
-      image: '/assets/photo_grid_2_1.jpg',
-      images: ['/assets/photo_grid_2_1.jpg'],
-      description: 'Minimalist dainty gold ring stack with micro-pave zirconia stones. Adjustable open band design fits most finger sizes.',
-      features: [
-        '18K gold electroplating for lasting luster',
-        'Hypoallergenic & nickel-free',
-        'Mix and match stacking styles'
-      ],
-      createdAt: '2026-11-01T17:00:00.000Z'
-    }
-  ],
-  orders: [
-    {
-      id: 'MSF-10021',
-      customer: {
-        name: 'Sadia Rahman',
-        email: 'sadia.rahman.test@gmail.com',
-        phone: '01712-345678',
-        address: 'House 14, Road 5, Block B, Bashundhara R/A',
-        city: 'Inside Dhaka',
-        notes: 'Please call before delivery'
-      },
-      items: [
-        {
-          id: 'prod-1',
-          name: 'Premium Crossbody Bag - FIOM Monogram',
-          price: 1850,
-          quantity: 1,
-          image: '/assets/bag_fiom.jpg'
-        }
-      ],
-      subtotal: 1850,
-      shipping: 70,
-      discount: 0,
-      total: 1920,
-      paymentMethod: 'Cash on Delivery',
-      paymentStatus: 'Pending',
-      status: 'Pending', // Pending, Accepted, Packaging, Out for Delivery, Delivered, Cancelled
-      trackingCode: 'MSF-TRK-771',
-      courier: 'Steadfast Courier',
-      timeline: [
-        {
-          status: 'Order Placed',
-          timestamp: '2026-11-02T18:30:00.000Z',
-          note: 'Order successfully received from customer'
-        }
-      ],
-      createdAt: '2026-11-02T18:30:00.000Z'
-    }
-  ],
-  emails: []
-};
+function getClient() {
+  if (getClient.client) return getClient.client;
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    throw new Error('Database not configured: set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.');
+  }
+  getClient.client = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+  return getClient.client;
+}
+
+function check({ data, error }) {
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+const num = v => (v === null || v === undefined ? v : Number(v));
+
+// ---- row <-> object mapping (DB uses snake_case, API uses camelCase) ----
+function productFromRow(r) {
+  return {
+    id: r.id,
+    name: r.name,
+    category: r.category,
+    price: num(r.price),
+    originalPrice: num(r.original_price),
+    stock: r.stock,
+    badge: r.badge,
+    image: r.image,
+    images: r.images || [],
+    description: r.description,
+    features: r.features || [],
+    createdAt: r.created_at
+  };
+}
+
+function productToRow(p) {
+  const map = {
+    id: 'id', name: 'name', category: 'category', price: 'price',
+    originalPrice: 'original_price', stock: 'stock', badge: 'badge',
+    image: 'image', images: 'images', description: 'description',
+    features: 'features', createdAt: 'created_at'
+  };
+  const row = {};
+  for (const [k, col] of Object.entries(map)) {
+    if (p[k] !== undefined) row[col] = p[k];
+  }
+  return row;
+}
+
+function orderFromRow(r) {
+  return {
+    id: r.id,
+    customer: r.customer,
+    items: r.items,
+    subtotal: num(r.subtotal),
+    shipping: num(r.shipping),
+    discount: num(r.discount),
+    total: num(r.total),
+    paymentMethod: r.payment_method,
+    paymentStatus: r.payment_status,
+    status: r.status,
+    trackingCode: r.tracking_code,
+    courier: r.courier,
+    timeline: r.timeline || [],
+    createdAt: r.created_at
+  };
+}
+
+function orderToRow(o) {
+  return {
+    id: o.id,
+    customer: o.customer,
+    items: o.items,
+    subtotal: o.subtotal,
+    shipping: o.shipping,
+    discount: o.discount,
+    total: o.total,
+    payment_method: o.paymentMethod,
+    payment_status: o.paymentStatus,
+    status: o.status,
+    tracking_code: o.trackingCode,
+    courier: o.courier,
+    timeline: o.timeline,
+    created_at: o.createdAt
+  };
+}
 
 class Store {
-  constructor() {
-    this.data = null;
-    this.init();
+  get db() {
+    return getClient();
   }
 
-  init() {
-    try {
-      if (fs.existsSync(DB_FILE)) {
-        const raw = fs.readFileSync(DB_FILE, 'utf-8');
-        this.data = JSON.parse(raw);
-        // Ensure all top-level keys exist
-        this.data.settings = { ...INITIAL_DATA.settings, ...(this.data.settings || {}) };
-        this.data.products = this.data.products || INITIAL_DATA.products;
-        this.data.orders = this.data.orders || INITIAL_DATA.orders;
-        this.data.emails = this.data.emails || [];
-      } else {
-        this.data = JSON.parse(JSON.stringify(INITIAL_DATA));
-        this.save();
-      }
-    } catch (err) {
-      console.error('Error loading DB, resetting to defaults:', err);
-      this.data = JSON.parse(JSON.stringify(INITIAL_DATA));
-      this.save();
-    }
+  // ---------------- Products ----------------
+  async getProducts() {
+    const rows = check(await this.db.from('products').select('*').order('created_at', { ascending: false }));
+    return rows.map(productFromRow);
   }
 
-  save() {
-    try {
-      fs.writeFileSync(DB_FILE, JSON.stringify(this.data, null, 2), 'utf-8');
-    } catch (err) {
-      console.error('Failed to save DB:', err);
-    }
+  async getProductById(id) {
+    const row = check(await this.db.from('products').select('*').eq('id', id).maybeSingle());
+    return row ? productFromRow(row) : null;
   }
 
-  // Products
-  getProducts() {
-    return this.data.products;
-  }
-
-  getProductById(id) {
-    return this.data.products.find(p => p.id === id);
-  }
-
-  addProduct(product) {
-    const newProduct = {
+  async addProduct(product) {
+    const row = productToRow({
       id: `prod-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       createdAt: new Date().toISOString(),
       ...product
-    };
-    this.data.products.unshift(newProduct);
-    this.save();
-    return newProduct;
+    });
+    return productFromRow(check(await this.db.from('products').insert(row).select().single()));
   }
 
-  updateProduct(id, updates) {
-    const idx = this.data.products.findIndex(p => p.id === id);
-    if (idx === -1) return null;
-    this.data.products[idx] = { ...this.data.products[idx], ...updates };
-    this.save();
-    return this.data.products[idx];
+  async updateProduct(id, updates) {
+    const row = productToRow(updates);
+    delete row.id;
+    delete row.created_at;
+    const data = check(await this.db.from('products').update(row).eq('id', id).select().maybeSingle());
+    return data ? productFromRow(data) : null;
   }
 
-  deleteProduct(id) {
-    const idx = this.data.products.findIndex(p => p.id === id);
-    if (idx === -1) return false;
-    this.data.products.splice(idx, 1);
-    this.save();
-    return true;
+  async deleteProduct(id) {
+    const data = check(await this.db.from('products').delete().eq('id', id).select('id'));
+    return data.length > 0;
   }
 
-  // Orders
-  getOrders() {
-    return this.data.orders;
+  // Upload an image buffer to Supabase Storage; returns its public URL
+  async uploadImage(buffer, originalName, contentType) {
+    const ext = (originalName.match(/\.[a-zA-Z0-9]+$/) || ['.jpg'])[0].toLowerCase();
+    const path = `item-${Date.now()}-${Math.floor(Math.random() * 10000)}${ext}`;
+    check(await this.db.storage.from(IMAGE_BUCKET).upload(path, buffer, { contentType, upsert: false }));
+    return this.db.storage.from(IMAGE_BUCKET).getPublicUrl(path).data.publicUrl;
   }
 
-  getOrderById(id) {
-    return this.data.orders.find(o => o.id.toLowerCase() === id.toLowerCase() || (o.customer && o.customer.phone === id));
+  // ---------------- Orders ----------------
+  async getOrders() {
+    const rows = check(await this.db.from('orders').select('*').order('created_at', { ascending: false }));
+    return rows.map(orderFromRow);
   }
 
-  addOrder(order) {
-    const orderNumber = Math.floor(10000 + Math.random() * 90000);
-    const newOrder = {
-      id: `MSF-${orderNumber}`,
-      createdAt: new Date().toISOString(),
-      status: 'Pending',
-      paymentStatus: order.paymentMethod === 'Cash on Delivery' ? 'Pending (COD)' : 'Paid / Verified',
-      trackingCode: `TRK-${orderNumber}`,
-      courier: 'Pathao / Steadfast Express',
-      timeline: [
-        {
-          status: 'Order Placed',
-          timestamp: new Date().toISOString(),
-          note: 'Order placed by customer via Masfeeh online shop.'
-        }
-      ],
-      ...order
-    };
-    this.data.orders.unshift(newOrder);
-    this.save();
-    return newOrder;
+  // Track by order id (case-insensitive) or customer phone number
+  async getOrderById(id) {
+    const key = String(id).trim();
+    let row = check(await this.db.from('orders').select('*').ilike('id', key.replace(/[%_]/g, '')).maybeSingle());
+    if (!row) {
+      const rows = check(await this.db.from('orders').select('*')
+        .eq('customer->>phone', key).order('created_at', { ascending: false }).limit(1));
+      row = rows[0];
+    }
+    return row ? orderFromRow(row) : null;
   }
 
-  updateOrderStatus(id, newStatus, note, courier) {
-    const order = this.data.orders.find(o => o.id.toLowerCase() === id.toLowerCase());
+  async addOrder(order) {
+    const now = new Date().toISOString();
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const orderNumber = Math.floor(10000 + Math.random() * 90000);
+      const newOrder = {
+        id: `MSF-${orderNumber}`,
+        createdAt: now,
+        status: 'Pending',
+        paymentStatus: order.paymentMethod === 'Cash on Delivery' ? 'Pending (COD)' : 'Paid / Verified',
+        trackingCode: `TRK-${orderNumber}`,
+        courier: 'Pathao / Steadfast Express',
+        timeline: [{ status: 'Order Placed', timestamp: now, note: 'Order placed by customer via Masfeeh online shop.' }],
+        ...order
+      };
+      const res = await this.db.from('orders').insert(orderToRow(newOrder)).select().single();
+      if (!res.error) return orderFromRow(res.data);
+      if (res.error.code !== '23505') throw new Error(res.error.message); // retry only on duplicate id
+    }
+    throw new Error('Could not allocate a unique order number, please retry.');
+  }
+
+  async updateOrderStatus(id, newStatus, note, courier) {
+    const order = await this.getOrderById(id);
     if (!order) return null;
-
-    order.status = newStatus;
-    if (courier) order.courier = courier;
-
-    const timelineEntry = {
+    const timeline = [...(order.timeline || []), {
       status: newStatus,
       timestamp: new Date().toISOString(),
       note: note || `Order status updated to ${newStatus}`
-    };
-    order.timeline.push(timelineEntry);
-    this.save();
-    return order;
+    }];
+    const patch = { status: newStatus, timeline };
+    if (courier) patch.courier = courier;
+    return orderFromRow(check(await this.db.from('orders').update(patch).eq('id', order.id).select().single()));
   }
 
-  // Settings
-  getSettings() {
-    return this.data.settings;
+  // ---------------- Settings ----------------
+  async getSettings() {
+    const row = check(await this.db.from('settings').select('data').eq('id', 1).maybeSingle());
+    return { ...DEFAULTS.settings, ...(row ? row.data : {}) };
   }
 
-  updateSettings(updates) {
-    this.data.settings = { ...this.data.settings, ...updates };
-    this.save();
-    return this.data.settings;
+  async updateSettings(updates) {
+    const merged = { ...(await this.getSettings()), ...updates };
+    check(await this.db.from('settings').upsert({ id: 1, data: merged, updated_at: new Date().toISOString() }));
+    return merged;
   }
 
-  // Email notifications log
-  getEmails() {
-    return this.data.emails;
+  // ---------------- Email log ----------------
+  async getEmails() {
+    const rows = check(await this.db.from('email_logs').select('id, created_at, data')
+      .order('created_at', { ascending: false }).limit(100));
+    return rows.map(r => ({ id: r.id, timestamp: r.created_at, ...r.data }));
   }
 
-  addEmailLog(emailRecord) {
+  async addEmailLog(emailRecord) {
     const record = {
       id: `email-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       timestamp: new Date().toISOString(),
       ...emailRecord
     };
-    this.data.emails.unshift(record);
-    // Keep max 100 emails in log
-    if (this.data.emails.length > 100) {
-      this.data.emails = this.data.emails.slice(0, 100);
-    }
-    this.save();
+    const { id, timestamp, ...data } = record;
+    check(await this.db.from('email_logs').insert({ id, created_at: timestamp, data }));
     return record;
+  }
+
+  // ---------------- Admin users ----------------
+  async getAdminByEmail(email) {
+    return check(await this.db.from('admin_users').select('*')
+      .eq('email', String(email).trim().toLowerCase()).maybeSingle());
+  }
+
+  async getAdminById(id) {
+    return check(await this.db.from('admin_users').select('id, email, name, role').eq('id', id).maybeSingle());
+  }
+
+  async updateAdminPassword(id, passwordHash) {
+    check(await this.db.from('admin_users').update({ password_hash: passwordHash }).eq('id', id));
   }
 }
 
 module.exports = new Store();
+module.exports.productToRow = productToRow;

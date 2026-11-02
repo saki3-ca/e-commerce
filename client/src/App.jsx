@@ -7,15 +7,18 @@ import CartDrawer from './components/CartDrawer';
 import CheckoutModal from './components/CheckoutModal';
 import OrderTrackingModal from './components/OrderTrackingModal';
 import AdminDashboard from './components/AdminDashboard';
+import AdminLogin from './components/AdminLogin';
 import MobileBottomNav from './components/MobileBottomNav';
 import Footer from './components/Footer';
-import { api } from './services/api';
+import { api, auth } from './services/api';
 import { Sparkles, SlidersHorizontal, Check, ShoppingBag, ArrowUpRight } from 'lucide-react';
 
 export default function App() {
   // Storefront & Admin toggle
   const [isAdmin, setIsAdmin] = useState(false);
   const [activeTab, setActiveTab] = useState('shop');
+  // Logged-in owner/admin (null = not logged in)
+  const [adminUser, setAdminUser] = useState(null);
 
   // Products & Settings State
   const [products, setProducts] = useState([]);
@@ -71,6 +74,20 @@ export default function App() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Restore an existing admin session; drop it if the server rejects it
+  useEffect(() => {
+    auth.onUnauthorized = () => setAdminUser(null);
+    if (auth.getToken()) {
+      api.me().then(({ user }) => setAdminUser(user)).catch(() => auth.clear());
+    }
+  }, []);
+
+  const handleLogout = () => {
+    auth.clear();
+    setAdminUser(null);
+    setIsAdmin(false);
+  };
 
   // Save cart to localStorage
   useEffect(() => {
@@ -160,11 +177,16 @@ export default function App() {
 
   // If in Admin mode, show Owner Admin Portal
   if (isAdmin) {
+    if (!adminUser) {
+      return <AdminLogin onSuccess={setAdminUser} onCancel={() => setIsAdmin(false)} />;
+    }
     return (
       <AdminDashboard 
         onSwitchToStore={() => setIsAdmin(false)}
         settings={settings}
         onRefreshSettings={loadData}
+        user={adminUser}
+        onLogout={handleLogout}
       />
     );
   }

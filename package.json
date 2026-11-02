@@ -12,7 +12,9 @@
     "server": "node server/index.js",
     "client": "npm run dev --prefix client",
     "build": "npm run build -w client",
-    "dev": "node dev.js"
+    "dev": "node dev.js",
+    "db:setup": "node server/scripts/setup-db.js",
+    "admin:create": "node server/scripts/create-admin.js"
   },
   "keywords": [
     "ecommerce",
