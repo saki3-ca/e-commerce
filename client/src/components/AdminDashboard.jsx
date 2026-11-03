@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import BrandLogo from './BrandLogo';
+import PhotoGalleryEditor from './PhotoGalleryEditor';
 
 export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSettings, user, onLogout }) {
   const [activeTab, setActiveTab] = useState('orders'); // orders, products, add-product, emails, settings
@@ -35,10 +36,10 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
     features: '',
     imageUrl: ''
   });
-  const [selectedImageFile, setSelectedImageFile] = useState(null);
+  // Product photo gallery being edited: [{ id, url, file? }], first = cover
+  const [photos, setPhotos] = useState([]);
   // When set, the product form edits this product instead of adding a new one
   const [editingId, setEditingId] = useState(null);
-  const [imagePreview, setImagePreview] = useState('');
   const [addingProduct, setAddingProduct] = useState(false);
 
   // Settings Form State
@@ -135,17 +136,6 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
   };
 
   // Handle Image File selection
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const blankProduct = {
     name: '',
@@ -161,8 +151,7 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
 
   const resetProductForm = () => {
     setNewProduct(blankProduct);
-    setSelectedImageFile(null);
-    setImagePreview('');
+    setPhotos([]);
     setEditingId(null);
   };
 
@@ -180,8 +169,8 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
       features: (p.features || []).join('\n'),
       imageUrl: p.image || ''
     });
-    setSelectedImageFile(null);
-    setImagePreview(p.image || '');
+    const gallery = (p.images && p.images.length ? p.images : [p.image]).filter(Boolean);
+    setPhotos([...new Set(gallery)].map(url => ({ id: url, url })));
     setActiveTab('add-product');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -191,6 +180,9 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
     e.preventDefault();
     if (!newProduct.name || !newProduct.price) {
       return showToast('Please provide at least product name and price', true);
+    }
+    if (photos.length === 0) {
+      return showToast('Please add at least one photo', true);
     }
 
     setAddingProduct(true);
@@ -206,11 +198,12 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
       formData.append('features', newProduct.features);
       if (editingId && !newProduct.originalPrice) formData.append('originalPrice', '');
 
-      if (selectedImageFile) {
-        formData.append('imageFile', selectedImageFile);
-      } else if (newProduct.imageUrl) {
-        formData.append('imageUrl', newProduct.imageUrl);
-      }
+      // Photos: new files are uploaded; photoOrder tells the server the final order (first = cover)
+      const newFiles = photos.filter(ph => ph.file).map(ph => ph.file);
+      newFiles.forEach(f => formData.append('imageFiles', f));
+      formData.append('photoOrder', JSON.stringify(
+        photos.map(ph => (ph.file ? { file: newFiles.indexOf(ph.file) } : { url: ph.url }))
+      ));
 
       if (editingId) {
         await api.updateProduct(editingId, formData);
@@ -667,43 +660,8 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
                   />
                 </div>
 
-                {/* Image Upload Option */}
-                <div className="sm:col-span-2 p-4 bg-stone-50 rounded-xl border border-stone-200">
-                  <label className="block text-xs font-bold text-stone-800 mb-2">
-                    Item Photo (Upload from computer or use image URL)
-                  </label>
-                  <div className="flex flex-col sm:flex-row items-center gap-4">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="text-xs file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#1f1d1d] file:text-[#e6c89c] hover:file:bg-stone-800 cursor-pointer"
-                    />
-                    <span className="text-xs text-stone-400">or URL:</span>
-                    <input
-                      type="text"
-                      placeholder="e.g. /assets/bag_fiom.jpg or https://..."
-                      value={newProduct.imageUrl}
-                      onChange={(e) => {
-                        setNewProduct({ ...newProduct, imageUrl: e.target.value });
-                        setImagePreview(e.target.value);
-                      }}
-                      className="flex-1 px-3 py-1.5 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:border-[#c59b27]"
-                    />
-                  </div>
-
-                  {/* Image Preview Box */}
-                  {imagePreview && (
-                    <div className="mt-3 flex items-center gap-3">
-                      <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="w-16 h-16 object-cover rounded-lg border border-stone-300"
-                      />
-                      <span className="text-xs text-emerald-700 font-semibold">Photo ready!</span>
-                    </div>
-                  )}
-                </div>
+                {/* Photos (multiple, first is the cover) */}
+                <PhotoGalleryEditor photos={photos} onChange={setPhotos} />
 
                 {/* Description */}
                 <div className="sm:col-span-2">

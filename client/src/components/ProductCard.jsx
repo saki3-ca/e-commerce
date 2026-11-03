@@ -6,6 +6,7 @@ import Reveal from './Reveal';
 export default function ProductCard({ product, onSelect, onQuickAdd, index = 0 }) {
   const soldOut = product.stock <= 0;
   const onSale = product.originalPrice && product.originalPrice > product.price;
+  const secondPhoto = (product.images || []).find(u => u && u !== product.image);
 
   return (
     <Reveal as="article" delay={(index % 3) * 90} className="group">
@@ -21,6 +22,15 @@ export default function ProductCard({ product, onSelect, onQuickAdd, index = 0 }
             loading="lazy"
             className={`w-full h-full object-cover transition-transform duration-[1.2s] ease-[var(--ease-lux)] group-hover:scale-[1.04] ${soldOut ? 'opacity-60' : ''}`}
           />
+          {/* Second photo fades in on hover (desktop) */}
+          {secondPhoto && (
+            <img
+              src={secondPhoto}
+              alt=""
+              loading="lazy"
+              className="hidden md:block absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-700"
+            />
+          )}
         </button>
 
         {(product.badge || soldOut) && (

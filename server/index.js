@@ -251,19 +251,44 @@ app.get('/api/products/:id', h(async (req, res) => {
   res.json(product);
 }));
 
-app.post('/api/products', auth.requireAdmin, upload.single('imageFile'), h(async (req, res) => {
-  const { name, category, price, originalPrice, stock, badge, description, features, imageUrl } = req.body;
+// Product photos: up to 8 per product. The form sends `photoOrder` (JSON) describing the final
+// gallery in order, mixing already-saved photos and new uploads:
+//   [{"url": "/assets/products/x.jpg"}, {"file": 0}, {"url": "https://..."}]
+// The first photo is the cover. Legacy single `imageFile` / `imageUrl` fields still work.
+const MAX_PHOTOS = 8;
+const productUpload = upload.fields([{ name: 'imageFiles', maxCount: MAX_PHOTOS }, { name: 'imageFile', maxCount: 1 }]);
+const safePhotoUrl = u => typeof u === 'string' && u.length <= 1000 && (/^\/assets\//.test(u) || /^https:\/\//.test(u));
+
+async function resolvePhotos(req) {
+  const files = [...((req.files && req.files.imageFiles) || []), ...((req.files && req.files.imageFile) || [])];
+  let order = null;
+  if (req.body.photoOrder) {
+    try { order = JSON.parse(req.body.photoOrder); } catch { throw Object.assign(new Error('Invalid photo list'), { status: 400 }); }
+    if (!Array.isArray(order)) throw Object.assign(new Error('Invalid photo list'), { status: 400 });
+  } else if (files.length || (req.body.imageUrl && req.body.imageUrl.trim())) {
+    order = [...files.map((_, i) => ({ file: i })), ...(req.body.imageUrl ? [{ url: req.body.imageUrl.trim() }] : [])];
+  }
+  if (!order) return null; // photos unchanged
+
+  const uploads = await Promise.all(files.map(f => store.uploadImage(f.buffer, f.originalname, f.mimetype)));
+  const photos = [];
+  for (const item of order.slice(0, MAX_PHOTOS)) {
+    if (item && Number.isInteger(item.file) && uploads[item.file]) photos.push(uploads[item.file]);
+    else if (item && safePhotoUrl(item.url)) photos.push(item.url.trim());
+  }
+  return [...new Set(photos)];
+}
+
+app.post('/api/products', auth.requireAdmin, productUpload, h(async (req, res) => {
+  const { name, category, price, originalPrice, stock, badge, description, features } = req.body;
 
   if (!name || !price || !category) {
     return res.status(400).json({ error: 'Name, price, and category are required' });
   }
 
-  let finalImageUrl = '/assets/bag_fiom.jpg';
-  if (req.file) {
-    finalImageUrl = await store.uploadImage(req.file.buffer, req.file.originalname, req.file.mimetype);
-  } else if (imageUrl && imageUrl.trim()) {
-    finalImageUrl = imageUrl.trim();
-  }
+  let photos;
+  try { photos = await resolvePhotos(req); } catch (err) { return res.status(err.status || 500).json({ error: err.message }); }
+  if (!photos || photos.length === 0) photos = ['/assets/products/fiom-monogram-crossbody.jpg'];
 
   const parsedFeatures = parseFeatures(features);
   const newProduct = await store.addProduct({
@@ -273,8 +298,8 @@ app.post('/api/products', auth.requireAdmin, upload.single('imageFile'), h(async
     originalPrice: originalPrice ? Number(originalPrice) : null,
     stock: stock !== undefined && stock !== '' ? Number(stock) : 10,
     badge: badge === '' ? null : (badge || 'New Arrival'),
-    image: finalImageUrl,
-    images: [finalImageUrl],
+    image: photos[0],
+    images: photos,
     description: description || 'Premium accessory from Masfeeh boutique collection.',
     features: parsedFeatures.length > 0 ? parsedFeatures : [
       'Premium high-grade construction',
@@ -286,12 +311,15 @@ app.post('/api/products', auth.requireAdmin, upload.single('imageFile'), h(async
   res.status(201).json(newProduct);
 }));
 
-app.put('/api/products/:id', auth.requireAdmin, upload.single('imageFile'), h(async (req, res) => {
+app.put('/api/products/:id', auth.requireAdmin, productUpload, h(async (req, res) => {
   const existing = await store.getProductById(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Product not found' });
 
   const updates = { ...req.body };
   delete updates.imageUrl;
+  delete updates.photoOrder;
+  delete updates.images;
+  delete updates.image;
   if (updates.price !== undefined) {
     updates.price = Number(updates.price);
     if (!(updates.price > 0)) return res.status(400).json({ error: 'Price must be greater than 0' });
@@ -306,15 +334,13 @@ app.put('/api/products/:id', auth.requireAdmin, upload.single('imageFile'), h(as
   }
   if (updates.badge === '') updates.badge = null;
   if (updates.features !== undefined) updates.features = parseFeatures(updates.features);
-  if (typeof updates.images === 'string') {
-    try { updates.images = JSON.parse(updates.images); } catch { delete updates.images; }
-  }
 
-  if (req.file) {
-    updates.image = await store.uploadImage(req.file.buffer, req.file.originalname, req.file.mimetype);
-    updates.images = [updates.image, ...(existing.images || [])];
-  } else if (req.body.imageUrl && req.body.imageUrl.trim()) {
-    updates.image = req.body.imageUrl.trim();
+  let photos;
+  try { photos = await resolvePhotos(req); } catch (err) { return res.status(err.status || 500).json({ error: err.message }); }
+  if (photos) {
+    if (photos.length === 0) return res.status(400).json({ error: 'A product needs at least one photo' });
+    updates.images = photos;
+    updates.image = photos[0];
   }
 
   res.json(await store.updateProduct(req.params.id, updates));

@@ -35,11 +35,36 @@ export default function ProductDetailsModal({ product, inBag = 0, onClose, onAdd
       <div className="grid md:grid-cols-2">
         {/* Gallery */}
         <div className="bg-sand md:flex md:flex-col">
-          <div className="aspect-square md:aspect-auto md:flex-1 md:min-h-[520px] overflow-hidden">
+          {/* Mobile: swipe between photos */}
+          <div className="md:hidden relative">
+            <div
+              className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar"
+              onScroll={e => {
+                const el = e.currentTarget;
+                const i = Math.round(el.scrollLeft / el.clientWidth);
+                if (i !== active) setActive(i);
+              }}
+            >
+              {images.map((img, i) => (
+                <div key={img + i} className="snap-center shrink-0 w-full aspect-square">
+                  <ProductImage src={img} alt={i === 0 ? product.name : ''} className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+            {images.length > 1 && (
+              <div className="absolute bottom-3 inset-x-0 flex justify-center gap-1.5" aria-hidden="true">
+                {images.map((_, i) => (
+                  <span key={i} className={`h-1.5 rounded-full transition-all ${i === active ? 'w-4 bg-ink' : 'w-1.5 bg-ink/30'}`} />
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Desktop: main photo + thumbnails */}
+          <div className="hidden md:block md:flex-1 md:min-h-[520px] overflow-hidden">
             <ProductImage src={images[active]} alt={product.name} className="w-full h-full object-cover anim-fade" key={active} />
           </div>
           {images.length > 1 && (
-            <div className="flex gap-2 p-3">
+            <div className="hidden md:flex gap-2 p-3 flex-wrap">
               {images.map((img, i) => (
                 <button
                   key={img + i}
