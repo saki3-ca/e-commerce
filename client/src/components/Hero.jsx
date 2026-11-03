@@ -3,41 +3,29 @@ import React from 'react';
 export default function Hero({ onShop, onShopCategory }) {
   return (
     <section className="border-b border-line">
-      <div className="grid md:grid-cols-[1.15fr_1fr] md:h-[min(520px,62vh)] md:min-h-[440px]">
-        {/* Words */}
-        <div className="order-2 md:order-1 flex flex-col justify-center px-6 sm:px-12 lg:pr-16 lg:pl-[max(4rem,calc((100vw-80rem)/2+2rem))] pt-7 pb-9 md:py-10">
-          <p className="label text-brass anim-rise">The Signature Collection</p>
-          <h1
-            className="mt-3 md:mt-5 font-display font-normal text-[36px] leading-[1.05] sm:text-[48px] lg:text-[60px] tracking-[-0.01em] text-ink anim-rise"
-            style={{ animationDelay: '80ms' }}
-          >
-            Little things,
-            <br />
-            <em className="font-normal italic text-ink-soft">big happiness.</em>
-          </h1>
-          <p
-            className="mt-3 md:mt-5 max-w-md text-[14px] md:text-[15px] leading-relaxed text-muted anim-rise"
-            style={{ animationDelay: '160ms' }}
-          >
-            Bags, jewellery and finishing touches, chosen piece by piece in Dhaka and
-            delivered to your door anywhere in Bangladesh.
-          </p>
-          <div className="mt-6 md:mt-8 flex flex-wrap items-center gap-x-8 gap-y-4 anim-rise" style={{ animationDelay: '240ms' }}>
-            <button onClick={onShop} className="btn-primary w-full sm:w-auto">Shop the collection</button>
-            <button onClick={() => onShopCategory('Bags')} className="label link-underline text-ink">
-              Discover bags
-            </button>
-          </div>
-        </div>
-
-        {/* Image */}
-        <div className="order-1 md:order-2 relative bg-sand overflow-hidden aspect-[16/10] md:aspect-auto">
-          <img
-            src="/assets/hero-fiom.jpg"
-            alt="Masfeeh monogram crossbody bag held against a warm wall"
-            className="absolute inset-0 w-full h-full object-cover object-[50%_58%] anim-fade"
-            fetchpriority="high"
-          />
+      <div className="max-w-4xl mx-auto px-6 pt-12 pb-12 sm:pt-20 sm:pb-20 text-center">
+        <p className="label text-brass anim-rise">The Signature Collection</p>
+        <h1
+          className="mt-4 sm:mt-6 font-display font-normal text-[40px] leading-[1.05] sm:text-[60px] lg:text-[72px] tracking-[-0.01em] text-ink anim-rise"
+          style={{ animationDelay: '80ms' }}
+        >
+          Little things, <em className="italic text-ink-soft">big happiness.</em>
+        </h1>
+        <p
+          className="mt-4 sm:mt-6 mx-auto max-w-md text-[14px] sm:text-[15px] leading-relaxed text-muted anim-rise"
+          style={{ animationDelay: '160ms' }}
+        >
+          Bags, jewellery and finishing touches, chosen piece by piece in Dhaka and
+          delivered to your door anywhere in Bangladesh.
+        </p>
+        <div
+          className="mt-7 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-x-8 gap-y-4 anim-rise"
+          style={{ animationDelay: '240ms' }}
+        >
+          <button onClick={onShop} className="btn-primary w-full sm:w-auto">Shop the collection</button>
+          <button onClick={() => onShopCategory('Bags')} className="label link-underline text-ink">
+            Discover bags
+          </button>
         </div>
       </div>
 

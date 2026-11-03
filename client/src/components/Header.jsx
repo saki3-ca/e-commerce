@@ -20,9 +20,20 @@ export default function Header({
   onHome
 }) {
   const inputRef = useRef(null);
+  const catBarRef = useRef(null);
   useEffect(() => {
     if (searchOpen && inputRef.current) inputRef.current.focus();
   }, [searchOpen]);
+
+  // Keep the active category visible in the swipeable bar (mobile)
+  useEffect(() => {
+    const bar = catBarRef.current;
+    const active = bar && bar.querySelector('[aria-current="page"]');
+    if (!bar || !active) return;
+    const li = active.parentElement;
+    const target = li.offsetLeft - (bar.clientWidth - li.clientWidth) / 2;
+    bar.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
+  }, [selectedCategory, categories]);
 
   const threshold = Number(settings?.freeShippingThreshold || 0);
 
@@ -102,7 +113,7 @@ export default function Header({
 
         {/* Categories */}
         <nav aria-label="Categories" className="border-t border-line/70">
-          <ul className="max-w-7xl mx-auto px-4 sm:px-8 h-10 flex items-center sm:justify-center gap-7 sm:gap-10 overflow-x-auto no-scrollbar">
+          <ul ref={catBarRef} className="relative max-w-7xl mx-auto px-4 sm:px-8 h-10 flex items-center sm:justify-center gap-7 sm:gap-10 overflow-x-auto no-scrollbar">
             {categories.map(cat => {
               const active = selectedCategory === cat;
               return (

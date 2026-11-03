@@ -1,13 +1,14 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
 import { formatPrice, ProductImage } from './ui';
+import Reveal from './Reveal';
 
 export default function ProductCard({ product, onSelect, onQuickAdd, index = 0 }) {
   const soldOut = product.stock <= 0;
   const onSale = product.originalPrice && product.originalPrice > product.price;
 
   return (
-    <article className="group anim-rise" style={{ animationDelay: `${Math.min(index, 8) * 60}ms` }}>
+    <Reveal as="article" delay={(index % 3) * 90} className="group">
       <div className="relative overflow-hidden bg-sand aspect-square">
         <button
           onClick={() => onSelect(product)}
@@ -62,6 +63,6 @@ export default function ProductCard({ product, onSelect, onQuickAdd, index = 0 }
           </button>
         )}
       </div>
-    </article>
+    </Reveal>
   );
 }

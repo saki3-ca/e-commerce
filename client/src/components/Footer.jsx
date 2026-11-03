@@ -37,11 +37,11 @@ export default function Footer({ categories, onSelectCategory, onOpenTrack, onOp
             </ul>
           </div>
 
-          <div>
+          <div className="col-span-2 md:col-span-1">
             <p className="label text-paper">Contact</p>
             <ul className="mt-5 space-y-3">
               {phone && <li><a href={`tel:${phone.replace(/[^\d+]/g, '')}`} className="hover:text-paper transition-colors">{phone}</a></li>}
-              {email && <li><a href={`mailto:${email}`} className="hover:text-paper transition-colors break-all">{email}</a></li>}
+              {email && <li><a href={`mailto:${email}`} className="hover:text-paper transition-colors">{email}</a></li>}
               {settings?.address && <li className="text-paper/50">{settings.address}</li>}
             </ul>
           </div>

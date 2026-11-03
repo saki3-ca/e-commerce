@@ -129,9 +129,9 @@
       "originalPrice": 650,
       "stock": 25,
       "badge": "Popular",
-      "image": "/assets/products/photo-grid-0-0.jpg",
+      "image": "/assets/products/demo-hair-pearl-comb.jpg",
       "images": [
-        "/assets/products/photo-grid-0-0.jpg"
+        "/assets/products/demo-hair-pearl-comb.jpg"
       ],
       "description": "Intricately handcrafted pearl and crystal embellished hair clips and bow set. High-grip teeth that stay secure without pulling.",
       "features": [
@@ -149,9 +149,9 @@
       "originalPrice": 1650,
       "stock": 8,
       "badge": "Bestseller",
-      "image": "/assets/brand_artwork.jpg",
+      "image": "/assets/products/demo-bangles-gold-stack.jpg",
       "images": [
-        "/assets/brand_artwork.jpg"
+        "/assets/products/demo-bangles-gold-stack.jpg"
       ],
       "description": "Traditional royal craftsmanship with soft velvet texture, golden thread work, and glistening stones. Perfect for festivals, parties, and weddings.",
       "features": [
@@ -169,9 +169,9 @@
       "originalPrice": 750,
       "stock": 30,
       "badge": "Trending",
-      "image": "/assets/products/photo-grid-1-1.jpg",
+      "image": "/assets/products/demo-nails-glitter-french.jpg",
       "images": [
-        "/assets/products/photo-grid-1-1.jpg"
+        "/assets/products/demo-nails-glitter-french.jpg"
       ],
       "description": "High-gloss salon finish medium almond press-on nails. Reusable up to 5 times with gentle removal.",
       "features": [
@@ -189,9 +189,9 @@
       "originalPrice": 950,
       "stock": 20,
       "badge": "New",
-      "image": "/assets/products/photo-grid-2-1.jpg",
+      "image": "/assets/products/demo-ring-plasma-gold.jpg",
       "images": [
-        "/assets/products/photo-grid-2-1.jpg"
+        "/assets/products/demo-ring-plasma-gold.jpg"
       ],
       "description": "Minimalist dainty gold ring stack with micro-pave zirconia stones. Adjustable open band design fits most finger sizes.",
       "features": [
@@ -200,6 +200,174 @@
         "Mix and match stacking styles"
       ],
       "createdAt": "2026-11-01T17:00:00.000Z"
+    },
+    {
+      "id": "demo-ring-carnelian",
+      "name": "Carnelian Oval Signet Ring",
+      "category": "Rings",
+      "price": 1150,
+      "originalPrice": 1450,
+      "stock": 12,
+      "badge": "New Arrival",
+      "image": "/assets/products/demo-ring-carnelian.jpg",
+      "images": [
+        "/assets/products/demo-ring-carnelian.jpg"
+      ],
+      "description": "A warm carnelian stone set in a polished gold-tone band. Simple, bold and made for everyday wear.",
+      "features": [
+        "Gold-tone plated band",
+        "Oval carnelian-red stone",
+        "Adjustable fit",
+        "Arrives in a Masfeeh gift box"
+      ],
+      "createdAt": "2026-11-02T09:00:00.000Z"
+    },
+    {
+      "id": "demo-ring-garnet",
+      "name": "Garnet Cabochon Statement Ring",
+      "category": "Rings",
+      "price": 1350,
+      "originalPrice": 1700,
+      "stock": 12,
+      "badge": "Limited Edition",
+      "image": "/assets/products/demo-ring-garnet.jpg",
+      "images": [
+        "/assets/products/demo-ring-garnet.jpg"
+      ],
+      "description": "A deep garnet-tone cabochon raised on a sculpted gold-tone setting, an heirloom look for evenings out.",
+      "features": [
+        "Raised cabochon setting",
+        "Deep garnet-tone stone",
+        "Adjustable fit",
+        "Arrives in a Masfeeh gift box"
+      ],
+      "createdAt": "2026-11-02T09:01:00.000Z"
+    },
+    {
+      "id": "demo-nails-gilded-marble",
+      "name": "Gilded Marble Coffin Press-on Set",
+      "category": "Fake Nails",
+      "price": 690,
+      "originalPrice": 890,
+      "stock": 12,
+      "badge": "Trending",
+      "image": "/assets/products/demo-nails-gilded-marble.jpg",
+      "images": [
+        "/assets/products/demo-nails-gilded-marble.jpg"
+      ],
+      "description": "Long coffin-shape press-ons in a cocoa marble finish with hand-placed gold leaf.",
+      "features": [
+        "24 nails in 12 sizes",
+        "Gold-leaf marble finish",
+        "Glue and adhesive tabs included",
+        "Reusable with care"
+      ],
+      "createdAt": "2026-11-02T09:02:00.000Z"
+    },
+    {
+      "id": "demo-nails-copper-chrome",
+      "name": "Copper Chrome Almond Press-on Set",
+      "category": "Fake Nails",
+      "price": 590,
+      "originalPrice": 750,
+      "stock": 12,
+      "badge": "New Arrival",
+      "image": "/assets/products/demo-nails-copper-chrome.jpg",
+      "images": [
+        "/assets/products/demo-nails-copper-chrome.jpg"
+      ],
+      "description": "Almond-shape press-ons with a mirror copper chrome finish that catches every light.",
+      "features": [
+        "24 nails in 12 sizes",
+        "Mirror chrome finish",
+        "Glue and adhesive tabs included",
+        "Reusable with care"
+      ],
+      "createdAt": "2026-11-02T09:03:00.000Z"
+    },
+    {
+      "id": "demo-hair-gilded-blossom",
+      "name": "Gilded Blossom Hair Pin",
+      "category": "Hair Accessories",
+      "price": 790,
+      "originalPrice": 990,
+      "stock": 12,
+      "badge": "Bestseller",
+      "image": "/assets/products/demo-hair-gilded-blossom.jpg",
+      "images": [
+        "/assets/products/demo-hair-gilded-blossom.jpg"
+      ],
+      "description": "A spray of gold-tone blossoms on a slim pin, made for buns, braids and bridal styling.",
+      "features": [
+        "Gold-tone floral spray",
+        "Secure slide-in pin",
+        "Lightweight for all-day wear",
+        "Arrives in a Masfeeh gift box"
+      ],
+      "createdAt": "2026-11-02T09:04:00.000Z"
+    },
+    {
+      "id": "demo-hair-kingfisher",
+      "name": "Kingfisher Enamel Hair Ornament",
+      "category": "Hair Accessories",
+      "price": 950,
+      "originalPrice": 1200,
+      "stock": 12,
+      "badge": "Limited Edition",
+      "image": "/assets/products/demo-hair-kingfisher.jpg",
+      "images": [
+        "/assets/products/demo-hair-kingfisher.jpg"
+      ],
+      "description": "A blue enamel bird among crystal flowers, a statement piece for weddings and special evenings.",
+      "features": [
+        "Blue enamel finish",
+        "Crystal flower accents",
+        "Secure hair stick",
+        "Arrives in a Masfeeh gift box"
+      ],
+      "createdAt": "2026-11-02T09:05:00.000Z"
+    },
+    {
+      "id": "demo-bangle-filigree-cuff",
+      "name": "Filigree Gold Cuff Bangle",
+      "category": "Bangles & More",
+      "price": 1490,
+      "originalPrice": 1890,
+      "stock": 12,
+      "badge": "Featured",
+      "image": "/assets/products/demo-bangle-filigree-cuff.jpg",
+      "images": [
+        "/assets/products/demo-bangle-filigree-cuff.jpg"
+      ],
+      "description": "An openwork filigree cuff in rich gold tone, delicate in detail and striking on the wrist.",
+      "features": [
+        "Openwork filigree design",
+        "Hinged clasp",
+        "Gold-tone plating",
+        "Arrives in a Masfeeh gift box"
+      ],
+      "createdAt": "2026-11-02T09:06:00.000Z"
+    },
+    {
+      "id": "demo-bangles-classic-pair",
+      "name": "Classic Gold Bangle Pair",
+      "category": "Bangles & More",
+      "price": 990,
+      "originalPrice": 1250,
+      "stock": 12,
+      "badge": "New Arrival",
+      "image": "/assets/products/demo-bangles-classic-pair.jpg",
+      "images": [
+        "/assets/products/demo-bangles-classic-pair.jpg"
+      ],
+      "description": "Two smooth, polished bangles to wear together or stack with the rest of your collection.",
+      "features": [
+        "Set of 2",
+        "Smooth polished finish",
+        "Gold-tone plating",
+        "Arrives in a Masfeeh gift box"
+      ],
+      "createdAt": "2026-11-02T09:07:00.000Z"
     }
   ],
   "orders": [

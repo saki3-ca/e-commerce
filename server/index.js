@@ -353,58 +353,71 @@ app.post('/api/quote', h(async (req, res) => {
   res.json(await pricing.quote({ items, city, coupon }));
 }));
 
+// Bangladeshi mobile numbers in one canonical form: 1XXXXXXXXX (accepts 01..., +8801..., 8801...)
+function canonicalBdPhone(phone) {
+  let d = String(phone || '').replace(/\D/g, '');
+  if (d.startsWith('880')) d = d.slice(3);
+  if (d.startsWith('0')) d = d.slice(1);
+  return /^1[3-9]\d{8}$/.test(d) ? d : null;
+}
+
 // Best-effort throttle on order placement (in-memory, per server instance).
-// - Client IP comes only from headers the hosting platform sets (never client-controlled X-Forwarded-For).
-// - Phone numbers only count once an order has really been placed, so nobody can lock out
-//   someone else's number by sending junk requests with it.
-// - The map has a hard size cap; expired entries are swept first, then the oldest keys are dropped.
+// - IP only from platform-set headers (never client-controlled X-Forwarded-For).
+// - IP and phone limits live in separate maps so IP churn cannot evict phone limits.
+// - Maps never evict live entries: expired ones are swept; if still full, new keys are refused (fail closed).
+// - The phone slot is reserved synchronously before any await, and released if the order fails.
 const ORDER_WINDOW_MS = 10 * 60 * 1000;
-const MAX_KEYS = 10000;
-const orderAttempts = new Map();
+const MAX_KEYS = 20000;
+const ipHits = new Map();
+const phoneHits = new Map();
 
 function clientIp(req) {
   return String(req.headers['x-vercel-forwarded-for'] || req.headers['x-real-ip'] || req.socket.remoteAddress || 'unknown')
     .split(',')[0].trim().slice(0, 64);
 }
-function phoneKey(phone) {
-  const digits = String(phone || '').replace(/\D/g, '');
-  return digits.length >= 10 && digits.length <= 15 ? `phone:${digits}` : null;
+function live(map, key, now) {
+  return (map.get(key) || []).filter(t => now - t < ORDER_WINDOW_MS);
 }
-function recentHits(key, now) {
-  return (orderAttempts.get(key) || []).filter(t => now - t < ORDER_WINDOW_MS);
-}
-function record(key, now) {
-  const hits = recentHits(key, now);
-  hits.push(now);
-  orderAttempts.delete(key); // re-insert so Map order = least recently used first
-  orderAttempts.set(key, hits);
-  if (orderAttempts.size > MAX_KEYS) {
-    for (const [k, times] of orderAttempts) {
-      if (!times.length || now - times[times.length - 1] >= ORDER_WINDOW_MS) orderAttempts.delete(k);
-    }
-    while (orderAttempts.size > MAX_KEYS) orderAttempts.delete(orderAttempts.keys().next().value);
+function hasRoom(map, key, now) {
+  if (map.has(key) || map.size < MAX_KEYS) return true;
+  for (const [k, times] of map) {
+    if (!times.length || now - times[times.length - 1] >= ORDER_WINDOW_MS) map.delete(k);
   }
+  return map.size < MAX_KEYS;
 }
-// Called on every order attempt: counts the IP, checks (but does not count) the phone
-function orderRateLimited(req) {
+// Returns null when allowed (and reserves a phone slot), or an error message when limited.
+function acquireOrderSlot(req) {
   const now = Date.now();
-  const ipKey = `ip:${clientIp(req)}`;
-  if (recentHits(ipKey, now).length >= 5) return true;
-  record(ipKey, now);
-  const pk = phoneKey(req.body && req.body.customer && req.body.customer.phone);
-  return pk ? recentHits(pk, now).length >= 3 : false;
-}
-// Called only after an order was created
-function recordPlacedOrder(phone) {
-  const pk = phoneKey(phone);
-  if (pk) record(pk, Date.now());
+  const ipKey = clientIp(req);
+  const ipRecent = live(ipHits, ipKey, now);
+  if (ipRecent.length >= 5 || !hasRoom(ipHits, ipKey, now)) {
+    return { error: 'Too many orders from this connection. Please wait a few minutes or call us.' };
+  }
+  ipRecent.push(now);
+  ipHits.set(ipKey, ipRecent);
+
+  const phone = canonicalBdPhone(req.body && req.body.customer && req.body.customer.phone);
+  if (!phone) return { invalidPhone: true };
+  const phoneRecent = live(phoneHits, phone, now);
+  if (phoneRecent.length >= 3 || !hasRoom(phoneHits, phone, now)) {
+    return { error: 'Several orders were just placed with this phone number. Please wait a few minutes or call us.' };
+  }
+  phoneRecent.push(now);
+  phoneHits.set(phone, phoneRecent);
+  return { release: () => {
+    const arr = phoneHits.get(phone) || [];
+    const i = arr.indexOf(now);
+    if (i >= 0) arr.splice(i, 1);
+  } };
 }
 
 // Place order: guests or signed-in customers. Prices are computed here, never trusted from the browser.
 app.post('/api/orders', h(async (req, res) => {
-  if (orderRateLimited(req)) {
-    return res.status(429).json({ error: 'Too many orders from this connection. Please wait a few minutes or call us.' });
-  }
+  const slot = acquireOrderSlot(req);
+  if (slot.error) return res.status(429).json({ error: slot.error });
+  if (slot.invalidPhone) return res.status(400).json({ error: 'Please enter a valid Bangladeshi mobile number (01XXXXXXXXX).' });
+  let placed = false;
+  try {
   const { customer, items, coupon, paymentMethod, trxId } = req.body || {};
 
   const invalid = validateOrderInput(req.body);
@@ -484,8 +497,11 @@ app.post('/api/orders', h(async (req, res) => {
   const results = await Promise.allSettled(emailJobs);
   results.filter(r => r.status === 'rejected').forEach(r => console.error('Order email failed:', r.reason));
 
-  recordPlacedOrder(newOrder.customer.phone);
+  placed = true;
   res.status(201).json({ success: true, order: newOrder });
+  } finally {
+    if (!placed) slot.release(); // failed or rejected orders don't use up the phone's allowance
+  }
 }));
 
 app.patch('/api/orders/:id/status', auth.requireAdmin, h(async (req, res) => {
