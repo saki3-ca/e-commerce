@@ -373,16 +373,43 @@ const MAX_KEYS = 20000;
 const ipHits = new Map();
 const phoneHits = new Map();
 
-function clientIp(req) {
-  const ip = String(req.headers['x-vercel-forwarded-for'] || req.headers['x-real-ip'] || req.socket.remoteAddress || 'unknown')
-    .split(',')[0].trim().slice(0, 64).replace(/^::ffff:/, '');
-  if (ip.includes(':')) {
-    // IPv6: keep the /64 network prefix
-    const parts = ip.split('::')[0].split(':');
-    return `${parts.slice(0, 4).join(':')}::/64`;
+// Expand any IPv6 text form (::, zone ids, embedded IPv4) to 8 normalised hextets, or null
+function expandIPv6(ip) {
+  let a = ip.split('%')[0].toLowerCase();
+  const v4 = /(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(a);
+  if (v4) {
+    const n = v4.slice(1).map(Number);
+    if (n.some(x => x > 255)) return null;
+    a = a.slice(0, v4.index) + ((n[0] << 8) | n[1]).toString(16) + ':' + ((n[2] << 8) | n[3]).toString(16);
   }
-  return ip;
+  const halves = a.split('::');
+  if (halves.length > 2) return null;
+  const head = halves[0] ? halves[0].split(':') : [];
+  const tail = halves.length === 2 && halves[1] ? halves[1].split(':') : [];
+  const fill = halves.length === 2 ? 8 - head.length - tail.length : 0;
+  if (fill < 0) return null;
+  const parts = [...head, ...Array(fill).fill('0'), ...tail];
+  if (parts.length !== 8 || parts.some(h => !/^[0-9a-f]{1,4}$/.test(h))) return null;
+  return parts.map(h => parseInt(h, 16).toString(16));
 }
+
+// Rate-limit keys for the caller: IPv4 address, or IPv6 /64 plus its /48 aggregate
+function clientKeys(req) {
+  const raw = String(req.headers['x-vercel-forwarded-for'] || req.headers['x-real-ip'] || req.socket.remoteAddress || 'unknown')
+    .split(',')[0].trim().slice(0, 64);
+  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(raw);
+  const ip = mapped ? mapped[1] : raw;
+  if (ip.includes(':')) {
+    const h = expandIPv6(ip);
+    if (!h) return [{ key: `bad:${ip}`, limit: 5 }];
+    return [
+      { key: `v6/64:${h.slice(0, 4).join(':')}`, limit: 5 },
+      { key: `v6/48:${h.slice(0, 3).join(':')}`, limit: 20 }
+    ];
+  }
+  return [{ key: `v4:${ip}`, limit: 5 }];
+}
+
 function live(map, key, now) {
   return (map.get(key) || []).filter(t => now - t < ORDER_WINDOW_MS);
 }
@@ -401,20 +428,18 @@ function store_(map, key, hits, now) {
 // Returns null when allowed (and reserves a phone slot), or an error message when limited.
 function acquireOrderSlot(req) {
   const now = Date.now();
-  const ipKey = clientIp(req);
-  const ipRecent = live(ipHits, ipKey, now);
-  if (ipRecent.length >= 5) {
+  const phone = canonicalBdPhone(req.body && req.body.customer && req.body.customer.phone);
+  if (!phone) return { invalidPhone: true }; // rejected before any database work, not counted
+
+  const keys = clientKeys(req);
+  if (keys.some(k => live(ipHits, k.key, now).length >= k.limit)) {
     return { error: 'Too many orders from this connection. Please wait a few minutes or call us.' };
   }
-  ipRecent.push(now);
-  store_(ipHits, ipKey, ipRecent, now);
-
-  const phone = canonicalBdPhone(req.body && req.body.customer && req.body.customer.phone);
-  if (!phone) return { invalidPhone: true };
   const phoneRecent = live(phoneHits, phone, now);
   if (phoneRecent.length >= 3) {
     return { error: 'Several orders were just placed with this phone number. Please wait a few minutes or call us.' };
   }
+  for (const k of keys) store_(ipHits, k.key, [...live(ipHits, k.key, now), now], now);
   phoneRecent.push(now);
   store_(phoneHits, phone, phoneRecent, now);
   return { release: () => {
