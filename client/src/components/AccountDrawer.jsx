@@ -208,6 +208,9 @@ export default function AccountDrawer({ open, onClose, account, onAuthenticated,
             <div className="mt-8">
               {mode === 'signin' ? <SignInForm onDone={onAuthenticated} /> : <SignUpForm onDone={onAuthenticated} cart={cart} />}
             </div>
+            <p className="mt-10 pt-6 border-t border-line text-[13px] text-muted">
+              Shop owner or staff? <a href="/admin" className="link-underline text-ink">Use the staff login</a>
+            </p>
           </>
         ) : (
           <>
