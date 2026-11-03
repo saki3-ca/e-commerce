@@ -364,7 +364,9 @@ function canonicalBdPhone(phone) {
 // Best-effort throttle on order placement (in-memory, per server instance).
 // - IP only from platform-set headers (never client-controlled X-Forwarded-For).
 // - IP and phone limits live in separate maps so IP churn cannot evict phone limits.
-// - Maps never evict live entries: expired ones are swept; if still full, new keys are refused (fail closed).
+// - When a map is full, expired entries are swept, then least-recently-used keys are dropped.
+//   Never refuses everyone (a full map must not become a site-wide outage).
+// - IPv6 addresses are grouped by /64 so one host cannot pose as millions of clients.
 // - The phone slot is reserved synchronously before any await, and released if the order fails.
 const ORDER_WINDOW_MS = 10 * 60 * 1000;
 const MAX_KEYS = 20000;
@@ -372,38 +374,49 @@ const ipHits = new Map();
 const phoneHits = new Map();
 
 function clientIp(req) {
-  return String(req.headers['x-vercel-forwarded-for'] || req.headers['x-real-ip'] || req.socket.remoteAddress || 'unknown')
-    .split(',')[0].trim().slice(0, 64);
+  const ip = String(req.headers['x-vercel-forwarded-for'] || req.headers['x-real-ip'] || req.socket.remoteAddress || 'unknown')
+    .split(',')[0].trim().slice(0, 64).replace(/^::ffff:/, '');
+  if (ip.includes(':')) {
+    // IPv6: keep the /64 network prefix
+    const parts = ip.split('::')[0].split(':');
+    return `${parts.slice(0, 4).join(':')}::/64`;
+  }
+  return ip;
 }
 function live(map, key, now) {
   return (map.get(key) || []).filter(t => now - t < ORDER_WINDOW_MS);
 }
-function hasRoom(map, key, now) {
-  if (map.has(key) || map.size < MAX_KEYS) return true;
-  for (const [k, times] of map) {
-    if (!times.length || now - times[times.length - 1] >= ORDER_WINDOW_MS) map.delete(k);
+// Store hits for key, keeping the map bounded (LRU order = Map insertion order)
+function store_(map, key, hits, now) {
+  map.delete(key);
+  map.set(key, hits);
+  if (map.size > MAX_KEYS) {
+    for (const [k, times] of map) {
+      if (!times.length || now - times[times.length - 1] >= ORDER_WINDOW_MS) map.delete(k);
+      if (map.size <= MAX_KEYS) break;
+    }
+    while (map.size > MAX_KEYS) map.delete(map.keys().next().value);
   }
-  return map.size < MAX_KEYS;
 }
 // Returns null when allowed (and reserves a phone slot), or an error message when limited.
 function acquireOrderSlot(req) {
   const now = Date.now();
   const ipKey = clientIp(req);
   const ipRecent = live(ipHits, ipKey, now);
-  if (ipRecent.length >= 5 || !hasRoom(ipHits, ipKey, now)) {
+  if (ipRecent.length >= 5) {
     return { error: 'Too many orders from this connection. Please wait a few minutes or call us.' };
   }
   ipRecent.push(now);
-  ipHits.set(ipKey, ipRecent);
+  store_(ipHits, ipKey, ipRecent, now);
 
   const phone = canonicalBdPhone(req.body && req.body.customer && req.body.customer.phone);
   if (!phone) return { invalidPhone: true };
   const phoneRecent = live(phoneHits, phone, now);
-  if (phoneRecent.length >= 3 || !hasRoom(phoneHits, phone, now)) {
+  if (phoneRecent.length >= 3) {
     return { error: 'Several orders were just placed with this phone number. Please wait a few minutes or call us.' };
   }
   phoneRecent.push(now);
-  phoneHits.set(phone, phoneRecent);
+  store_(phoneHits, phone, phoneRecent, now);
   return { release: () => {
     const arr = phoneHits.get(phone) || [];
     const i = arr.indexOf(now);
