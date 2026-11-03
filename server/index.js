@@ -269,7 +269,7 @@ app.post('/api/products', auth.requireAdmin, upload.single('imageFile'), h(async
     price: Number(price),
     originalPrice: originalPrice ? Number(originalPrice) : null,
     stock: stock !== undefined && stock !== '' ? Number(stock) : 10,
-    badge: badge || 'New',
+    badge: badge === '' ? null : (badge || 'New Arrival'),
     image: finalImageUrl,
     images: [finalImageUrl],
     description: description || 'Premium accessory from Masfeeh boutique collection.',
@@ -289,9 +289,19 @@ app.put('/api/products/:id', auth.requireAdmin, upload.single('imageFile'), h(as
 
   const updates = { ...req.body };
   delete updates.imageUrl;
-  if (updates.price) updates.price = Number(updates.price);
-  if (updates.originalPrice) updates.originalPrice = Number(updates.originalPrice);
-  if (updates.stock !== undefined) updates.stock = Number(updates.stock);
+  if (updates.price !== undefined) {
+    updates.price = Number(updates.price);
+    if (!(updates.price > 0)) return res.status(400).json({ error: 'Price must be greater than 0' });
+  }
+  if (updates.originalPrice !== undefined) {
+    updates.originalPrice = updates.originalPrice === '' || updates.originalPrice === null ? null : Number(updates.originalPrice);
+    if (updates.originalPrice !== null && !(updates.originalPrice >= 0)) return res.status(400).json({ error: 'Invalid original price' });
+  }
+  if (updates.stock !== undefined) {
+    updates.stock = Math.floor(Number(updates.stock));
+    if (!(updates.stock >= 0)) return res.status(400).json({ error: 'Stock must be 0 or more' });
+  }
+  if (updates.badge === '') updates.badge = null;
   if (updates.features !== undefined) updates.features = parseFeatures(updates.features);
   if (typeof updates.images === 'string') {
     try { updates.images = JSON.parse(updates.images); } catch { delete updates.images; }

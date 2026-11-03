@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Package, ShoppingCart, PlusCircle, Mail, Settings, CheckCircle2, 
+  Package, ShoppingCart, PlusCircle, Pencil, Mail, Settings, CheckCircle2, 
   AlertCircle, RefreshCw, Trash2, 
   ExternalLink, 
   Check
@@ -36,6 +36,8 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
     imageUrl: ''
   });
   const [selectedImageFile, setSelectedImageFile] = useState(null);
+  // When set, the product form edits this product instead of adding a new one
+  const [editingId, setEditingId] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
   const [addingProduct, setAddingProduct] = useState(false);
 
@@ -145,7 +147,46 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
     }
   };
 
-  // Add New Product
+  const blankProduct = {
+    name: '',
+    category: 'Bags',
+    price: '',
+    originalPrice: '',
+    stock: 15,
+    badge: 'New Arrival',
+    description: '',
+    features: '',
+    imageUrl: ''
+  };
+
+  const resetProductForm = () => {
+    setNewProduct(blankProduct);
+    setSelectedImageFile(null);
+    setImagePreview('');
+    setEditingId(null);
+  };
+
+  // Open the product form pre-filled with an existing product
+  const startEditProduct = (p) => {
+    setEditingId(p.id);
+    setNewProduct({
+      name: p.name || '',
+      category: p.category || 'Bags',
+      price: p.price ?? '',
+      originalPrice: p.originalPrice ?? '',
+      stock: p.stock ?? 0,
+      badge: p.badge || '',
+      description: p.description || '',
+      features: (p.features || []).join('\n'),
+      imageUrl: p.image || ''
+    });
+    setSelectedImageFile(null);
+    setImagePreview(p.image || '');
+    setActiveTab('add-product');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Add New Product (or save changes when editing)
   const handleAddProduct = async (e) => {
     e.preventDefault();
     if (!newProduct.name || !newProduct.price) {
@@ -163,6 +204,7 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
       formData.append('badge', newProduct.badge);
       formData.append('description', newProduct.description);
       formData.append('features', newProduct.features);
+      if (editingId && !newProduct.originalPrice) formData.append('originalPrice', '');
 
       if (selectedImageFile) {
         formData.append('imageFile', selectedImageFile);
@@ -170,26 +212,19 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
         formData.append('imageUrl', newProduct.imageUrl);
       }
 
-      await api.addProduct(formData);
-      showToast(`✨ Product "${newProduct.name}" added successfully!`);
-      // Reset form
-      setNewProduct({
-        name: '',
-        category: 'Bags',
-        price: '',
-        originalPrice: '',
-        stock: 15,
-        badge: 'New Arrival',
-        description: '',
-        features: '',
-        imageUrl: ''
-      });
-      setSelectedImageFile(null);
-      setImagePreview('');
+      if (editingId) {
+        await api.updateProduct(editingId, formData);
+        showToast(`Changes to "${newProduct.name}" saved`);
+      } else {
+        await api.addProduct(formData);
+        showToast(`✨ Product "${newProduct.name}" added successfully!`);
+      }
+      resetProductForm();
       loadData();
+      if (onRefreshSettings) onRefreshSettings(); // refresh the storefront catalogue too
       setActiveTab('products');
     } catch (err) {
-      showToast(err.message || 'Failed to add product', true);
+      showToast(err.message || (editingId ? 'Failed to save changes' : 'Failed to add product'), true);
     } finally {
       setAddingProduct(false);
     }
@@ -320,7 +355,7 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
           </button>
 
           <button
-            onClick={() => setActiveTab('add-product')}
+            onClick={() => { resetProductForm(); setActiveTab('add-product'); }}
             className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'add-product'
                 ? 'bg-[#1f1d1d] text-[#e6c89c] shadow-xs'
@@ -521,13 +556,15 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
           <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-6 max-w-3xl mx-auto">
             <div className="border-b border-stone-200 pb-4 mb-6">
               <div className="flex items-center gap-2">
-                <PlusCircle className="w-6 h-6 text-[#c59b27]" />
+                {editingId ? <Pencil className="w-6 h-6 text-[#c59b27]" /> : <PlusCircle className="w-6 h-6 text-[#c59b27]" />}
                 <h2 className="font-serif-luxury text-xl font-bold text-stone-900">
-                  Add New Item to Shop
+                  {editingId ? 'Edit Item' : 'Add New Item to Shop'}
                 </h2>
               </div>
               <p className="text-xs text-stone-500 mt-1">
-                Quickly add a new bag, nail set, jewelry or hair accessory to Masfeeh's online catalog.
+                {editingId
+                  ? 'Change any detail, price, stock or photo, then save. Changes appear in the shop straight away.'
+                  : "Quickly add a new bag, nail set, jewelry or hair accessory to Masfeeh's online catalog."}
               </p>
             </div>
 
@@ -576,8 +613,12 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
                     onChange={(e) => setNewProduct({ ...newProduct, badge: e.target.value })}
                     className="w-full px-3.5 py-2.5 text-xs bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:border-[#c59b27] focus:bg-white"
                   >
+                    <option value="">No badge</option>
                     <option value="New Arrival">New Arrival</option>
+                    <option value="New">New</option>
                     <option value="Bestseller">Bestseller</option>
+                    <option value="Featured">Featured</option>
+                    <option value="Popular">Popular</option>
                     <option value="Trending">Trending</option>
                     <option value="Limited Edition">Limited Edition</option>
                     <option value="Hot">Hot</option>
@@ -696,7 +737,7 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
               <div className="pt-4 border-t border-stone-200 flex justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => setActiveTab('products')}
+                  onClick={() => { resetProductForm(); setActiveTab('products'); }}
                   className="px-4 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-100 rounded-xl transition-colors"
                 >
                   Cancel
@@ -707,7 +748,11 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
                   className="px-6 py-2.5 bg-[#1f1d1d] hover:bg-stone-800 text-[#e6c89c] text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   <PlusCircle className="w-4 h-4 text-[#d4af37]" />
-                  <span>{addingProduct ? 'Adding Item...' : 'Publish Product to Shop'}</span>
+                  <span>
+                    {editingId
+                      ? (addingProduct ? 'Saving...' : 'Save Changes')
+                      : (addingProduct ? 'Adding Item...' : 'Publish Product to Shop')}
+                  </span>
                 </button>
               </div>
             </form>
@@ -727,7 +772,7 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
                 </p>
               </div>
               <button
-                onClick={() => setActiveTab('add-product')}
+                onClick={() => { resetProductForm(); setActiveTab('add-product'); }}
                 className="px-3.5 py-2 bg-[#1f1d1d] hover:bg-stone-800 text-[#e6c89c] text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
               >
                 <PlusCircle className="w-3.5 h-3.5 text-[#d4af37]" />
@@ -769,7 +814,15 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
                     </div>
                   </div>
 
-                  <div className="mt-3 pt-2 border-t border-stone-200 flex justify-end gap-1">
+                  <div className="mt-3 pt-2 border-t border-stone-200 flex justify-between items-center gap-1">
+                    <button
+                      onClick={() => startEditProduct(p)}
+                      className="px-3 py-1.5 text-xs font-semibold text-stone-700 hover:text-stone-900 rounded-lg hover:bg-stone-200/60 flex items-center gap-1.5 transition-colors"
+                      title="Edit Product"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      <span>Edit</span>
+                    </button>
                     <button
                       onClick={() => handleDeleteProduct(p.id, p.name)}
                       className="p-1.5 text-stone-400 hover:text-rose-600 rounded hover:bg-stone-200/50 transition-colors"
