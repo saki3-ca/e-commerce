@@ -21,6 +21,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// API responses are always live data: never cache them in the browser or a CDN
+app.use('/api', (req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+
 // Images are kept in memory then pushed to Supabase Storage (no local disk on Vercel)
 const upload = multer({
   storage: multer.memoryStorage(),

@@ -79,6 +79,19 @@ export default function App() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Refresh the catalogue when the shopper returns to the tab (picks up edits, deletions, stock)
+  useEffect(() => {
+    let last = Date.now();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && Date.now() - last > 30000) {
+        last = Date.now();
+        loadData();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [loadData]);
+
   // ---------- sessions ----------
   useEffect(() => {
     auth.onUnauthorized = () => setAdminUser(null);

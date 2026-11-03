@@ -2,21 +2,28 @@ import React from 'react';
 import Reveal from './Reveal';
 import { ProductImage } from './ui';
 
-// Preferred cover image per category; falls back to the category's first product
-const COVERS = {
-  Bags: '/assets/products/golden-crest-crossbody.jpg',
-  Rings: '/assets/products/demo-ring-carnelian.jpg',
-  'Fake Nails': '/assets/products/demo-nails-gilded-marble.jpg',
-  'Bangles & More': '/assets/products/demo-bangle-filigree-cuff.jpg',
-  'Hair Accessories': '/assets/products/demo-hair-gilded-blossom.jpg'
+// Preferred cover per category, used only while that product is still in the shop
+const PREFERRED = {
+  Bags: 'golden-crest-crossbody',
+  Rings: 'demo-ring-carnelian',
+  'Fake Nails': 'demo-nails-gilded-marble',
+  'Bangles & More': 'demo-bangle-filigree-cuff',
+  'Hair Accessories': 'demo-hair-gilded-blossom'
 };
+
+function coverFor(category, items) {
+  const wanted = PREFERRED[category];
+  const preferred = wanted && items.find(p => p.id === wanted || (p.image || '').includes(wanted));
+  const inStock = items.find(p => p.stock > 0 && p.image);
+  return (preferred || inStock || items[0] || {}).image;
+}
 
 export default function CategoryTiles({ categories, products, onSelect }) {
   const tiles = categories
     .filter(c => c !== 'All')
     .map(c => {
       const items = products.filter(p => p.category === c);
-      return { name: c, count: items.length, image: COVERS[c] || (items[0] && items[0].image) };
+      return { name: c, count: items.length, image: coverFor(c, items) };
     })
     .filter(t => t.count > 0);
 
