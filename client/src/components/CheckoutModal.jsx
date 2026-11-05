@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Field, formatPrice, ProductImage, Spinner } from './ui';
+import { Trash2 } from 'lucide-react';
+import { Modal, Field, formatPrice, ProductImage, Spinner, QuantityStepper } from './ui';
 import { useQuote } from '../hooks/useQuote';
 import { api } from '../services/api';
 
@@ -23,6 +24,8 @@ export default function CheckoutModal({
   onClose,
   items,
   lines,
+  onSetQuantity,
+  onRemove,
   coupon,
   settings,
   account,
@@ -224,12 +227,35 @@ export default function CheckoutModal({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-display text-[17px] leading-snug text-ink">{product.name}</p>
-                  <p className="text-[13px] text-muted">Qty {quantity}</p>
+                  <div className="mt-2 flex items-center gap-4">
+                    <QuantityStepper
+                      size="sm"
+                      value={quantity}
+                      min={1}
+                      max={Math.max(1, Math.min(10, product.stock))}
+                      onChange={q => onSetQuantity(product.id, q)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => onRemove(product.id)}
+                      aria-label={`Delete ${product.name} from bag`}
+                      title="Delete"
+                      className="w-8 h-8 flex items-center justify-center text-ink/70 hover:text-danger transition-colors"
+                    >
+                      <Trash2 className="w-[18px] h-[18px]" strokeWidth={1.25} />
+                    </button>
+                  </div>
                 </div>
                 <p className="text-[14px] tabular-nums">{formatPrice(product.price * quantity)}</p>
               </li>
             ))}
           </ul>
+          {items.length === 0 && (
+            <p className="mt-6 text-[14px] text-muted">
+              Your bag is empty.{' '}
+              <button type="button" onClick={onClose} className="link-underline text-ink">Continue shopping</button>
+            </p>
+          )}
 
           <dl className="mt-8 pt-6 border-t border-line space-y-2.5 text-[14px]">
             <div className="flex justify-between"><dt className="text-muted">Subtotal</dt><dd className="tabular-nums">{quote ? formatPrice(quote.subtotal) : '—'}</dd></div>

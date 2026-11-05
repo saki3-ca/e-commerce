@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import { Drawer, QuantityStepper, formatPrice, ProductImage, Spinner } from './ui';
 import { useQuote } from '../hooks/useQuote';
 
@@ -118,7 +119,7 @@ export default function CartDrawer({
                         {short.available > 0 ? `Only ${short.available} available` : 'Sold out'}
                       </p>
                     )}
-                    <div className="mt-auto pt-3 flex items-center justify-between">
+                    <div className="mt-auto pt-3 flex items-center gap-3">
                       <QuantityStepper
                         size="sm"
                         value={quantity}
@@ -126,8 +127,14 @@ export default function CartDrawer({
                         max={Math.max(1, Math.min(10, product.stock))}
                         onChange={q => onSetQuantity(product.id, q)}
                       />
-                      <button onClick={() => onRemove(product.id)} className="label text-[10px] text-muted hover:text-ink">
-                        Remove
+                      <button
+                        type="button"
+                        onClick={() => onRemove(product.id)}
+                        aria-label={`Delete ${product.name} from bag`}
+                        title="Delete"
+                        className="w-8 h-8 flex items-center justify-center text-ink/70 hover:text-danger transition-colors"
+                      >
+                        <Trash2 className="w-[18px] h-[18px]" strokeWidth={1.25} />
                       </button>
                     </div>
                   </div>

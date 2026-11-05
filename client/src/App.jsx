@@ -385,6 +385,8 @@ export default function App() {
         onClose={() => setCheckoutOpen(false)}
         items={bagItems}
         lines={cart.lines}
+        onSetQuantity={cart.setQuantity}
+        onRemove={cart.remove}
         coupon={coupon}
         settings={settings}
         account={account}
