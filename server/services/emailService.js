@@ -330,6 +330,88 @@ class EmailService {
     });
   }
 
+  // 3b. EMAIL TO CUSTOMER: later steps (packaging, out for delivery, delivered, cancelled)
+  async sendOrderStatusUpdateToCustomer(order, note) {
+    const rawEmail = order.customer && order.customer.email;
+    order = escapeDeep(order);
+    note = note ? escapeHtml(note) : '';
+    this.settings = await store.getSettings();
+    if (!rawEmail) return null;
+
+    const COPY = {
+      'Packaging': {
+        subject: `Your order #${order.id} is being packed`,
+        headline: 'We are packing your order 📦',
+        text: 'Your items are being checked and wrapped with care.',
+        badge: 'badge-green', label: 'Packaging'
+      },
+      'Out for Delivery': {
+        subject: `Your order #${order.id} is on its way`,
+        headline: 'Your order is on its way 🚚',
+        text: `The courier has your parcel and will call you on <strong>${order.customer.phone}</strong>, so please keep your phone nearby.`,
+        badge: 'badge-green', label: 'Out for Delivery'
+      },
+      'Delivered': {
+        subject: `Your order #${order.id} was delivered`,
+        headline: 'Delivered. Enjoy! 💛',
+        text: 'Thank you for shopping with Masfeeh. We would love to see how you style it, so tag us on Facebook!',
+        badge: 'badge-green', label: 'Delivered'
+      },
+      'Cancelled': {
+        subject: `Your order #${order.id} was cancelled`,
+        headline: 'Your order was cancelled',
+        text: 'If this is a surprise, or you would like to order again, just message us and we will help.',
+        badge: 'badge-gold', label: 'Cancelled'
+      }
+    };
+    const c = COPY[order.status];
+    if (!c) return null;
+
+    const courierRows = (order.courier || order.trackingCode) ? `
+          <tr>
+            <td style="padding: 6px 0;"><strong>Courier:</strong></td>
+            <td style="text-align: right; font-weight: 600;">${order.courier || '-'}</td>
+          </tr>
+          ${order.trackingCode ? `<tr>
+            <td style="padding: 6px 0;"><strong>Tracking code:</strong></td>
+            <td style="text-align: right; font-family: monospace; font-weight: 700; color: #9c6c0e;">${order.trackingCode}</td>
+          </tr>` : ''}` : '';
+
+    const bodyHtml = `
+      <div style="text-align: center; margin-bottom: 25px;">
+        <span class="badge ${c.badge}">${c.label}</span>
+        <h2 style="margin: 12px 0 6px 0; font-size: 24px; color: #1f1d1d; font-family: 'Playfair Display', Georgia, serif;">${c.headline}</h2>
+        <p style="color: #4b3e39; margin: 0; font-size: 15px;">Dear <strong>${order.customer.name}</strong>, ${c.text}</p>
+        ${note ? `<p style="margin: 14px 0 0 0; padding: 10px; background: #fcf9f2; border-radius: 6px; font-size: 14px; color: #5c4b3f;">${note}</p>` : ''}
+      </div>
+      <div class="order-card" style="border-left: 4px solid #c59b27;">
+        <table style="width: 100%;">
+          <tr>
+            <td style="padding: 6px 0;"><strong>Order ID:</strong></td>
+            <td style="text-align: right; font-weight: 700; color: #1f1d1d;">#${order.id}</td>
+          </tr>
+          ${courierRows}
+          <tr>
+            <td style="padding: 6px 0;"><strong>Total:</strong></td>
+            <td style="text-align: right; font-weight: 700;">৳${order.total.toLocaleString()} (${order.paymentMethod})</td>
+          </tr>
+        </table>
+      </div>
+      <div style="text-align: center; margin-top: 30px;">
+        <p style="font-size: 13px; color: #7a6e69;">Track your order any time with Order ID <strong>#${order.id}</strong>, or message us on WhatsApp at <strong>${this.settings.ownerPhone}</strong>.</p>
+      </div>
+    `;
+
+    const html = this.renderLayout(bodyHtml, c.subject);
+    return await this.dispatchEmail({
+      to: rawEmail,
+      subject: `[Masfeeh] ${c.subject}`,
+      html,
+      type: 'CUSTOMER_ORDER_STATUS',
+      orderId: order.id
+    });
+  }
+
   // 4. Dispatch helper: sends via nodemailer if configured, logs to store
   async dispatchEmail({ to, subject, html, type, orderId }) {
     const settings = this.settings || (this.settings = await store.getSettings());

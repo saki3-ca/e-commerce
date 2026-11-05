@@ -21,6 +21,19 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
 
   // Selected Order for detail modal
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [statusForm, setStatusForm] = useState({ courier: '', trackingCode: '', note: '', notify: true });
+  useEffect(() => {
+    if (selectedOrder) {
+      setStatusForm({
+        courier: selectedOrder.courier || '',
+        trackingCode: selectedOrder.trackingCode || '',
+        note: '',
+        notify: true
+      });
+    }
+    // only re-fill when a different order is opened, not after every update
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedOrder?.id]);
   // Selected Email for HTML preview modal
   const [previewEmail, setPreviewEmail] = useState(null);
 
@@ -116,16 +129,19 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
     }
   };
 
-  // Update order status with custom note or courier code
-  const handleUpdateStatus = async (orderId, newStatus, courierCode) => {
+  // Update order status; courier, tracking code and note come from the panel in the order modal
+  const handleUpdateStatus = async (orderId, newStatus) => {
     try {
       const res = await api.updateOrderStatus(
-        orderId, 
-        newStatus, 
-        `Status updated to ${newStatus}`, 
-        courierCode || 'Steadfast Courier'
+        orderId,
+        newStatus,
+        statusForm.note.trim() || undefined,
+        statusForm.courier || undefined,
+        statusForm.trackingCode.trim() || undefined,
+        statusForm.notify
       );
-      showToast(`Order #${orderId} status updated to ${newStatus}`);
+      showToast(res.message || `Order #${orderId} status updated to ${newStatus}`);
+      setStatusForm(f => ({ ...f, note: '' }));
       loadData();
       if (selectedOrder && selectedOrder.id === orderId) {
         setSelectedOrder(res.order);
@@ -133,6 +149,20 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
     } catch (err) {
       showToast(err.message || 'Failed to update status', true);
     }
+  };
+
+  // Ready-made WhatsApp message so the owner can also tell the customer in one tap
+  const whatsappLink = (order) => {
+    const digits = String(order.customer?.phone || '').replace(/\D/g, '');
+    const intl = digits.startsWith('880') ? digits : `880${digits.replace(/^0/, '')}`;
+    const lines = [
+      `Hello ${order.customer?.name || ''}, this is Masfeeh.`,
+      `Your order #${order.id} is now: ${order.status}.`
+    ];
+    if (order.courier) lines.push(`Courier: ${order.courier}`);
+    if (order.trackingCode) lines.push(`Tracking code: ${order.trackingCode}`);
+    lines.push('Thank you for shopping with us!');
+    return `https://wa.me/${intl}?text=${encodeURIComponent(lines.join('\n'))}`;
   };
 
   // Handle Image File selection
@@ -1129,35 +1159,99 @@ export default function AdminDashboard({ onSwitchToStore, settings, onRefreshSet
                     <Check className="w-4 h-4" />
                     <span>Accept Order Now</span>
                   </button>
-                ) : (
-                  <div className="flex gap-1.5">
-                    <button
-                      onClick={() => handleUpdateStatus(selectedOrder.id, 'Packaging')}
-                      className="px-2.5 py-1 bg-stone-200 hover:bg-stone-300 rounded font-semibold text-stone-700"
-                    >
-                      Packaging
-                    </button>
-                    <button
-                      onClick={() => handleUpdateStatus(selectedOrder.id, 'Out for Delivery')}
-                      className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 rounded font-semibold text-amber-800"
-                    >
-                      Out for Delivery
-                    </button>
-                    <button
-                      onClick={() => handleUpdateStatus(selectedOrder.id, 'Delivered')}
-                      className="px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 rounded font-semibold text-emerald-800"
-                    >
-                      Delivered
-                    </button>
-                  </div>
-                )}
+                ) : null}
               </div>
+
+              {/* Delivery update: courier, tracking code, note, status */}
+              {selectedOrder.status !== 'Pending' && (
+                <div className="p-4 rounded-xl border border-stone-200 bg-white space-y-3">
+                  <h4 className="font-bold text-stone-800">Update delivery status</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="block">
+                      <span className="text-[10px] text-stone-400 uppercase font-bold">Courier</span>
+                      <select
+                        value={statusForm.courier}
+                        onChange={e => setStatusForm(f => ({ ...f, courier: e.target.value }))}
+                        className="mt-0.5 w-full border border-stone-300 rounded-lg px-2 py-1.5 bg-white"
+                      >
+                        <option value="">Not assigned yet</option>
+                        {['Steadfast', 'Pathao', 'RedX', 'eCourier', 'Own delivery', 'Other'].map(c => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                        {statusForm.courier && !['Steadfast', 'Pathao', 'RedX', 'eCourier', 'Own delivery', 'Other'].includes(statusForm.courier) && (
+                          <option value={statusForm.courier}>{statusForm.courier}</option>
+                        )}
+                      </select>
+                    </label>
+                    <label className="block">
+                      <span className="text-[10px] text-stone-400 uppercase font-bold">Tracking code</span>
+                      <input
+                        value={statusForm.trackingCode}
+                        maxLength={60}
+                        onChange={e => setStatusForm(f => ({ ...f, trackingCode: e.target.value }))}
+                        placeholder="e.g. consignment ID"
+                        className="mt-0.5 w-full border border-stone-300 rounded-lg px-2 py-1.5"
+                      />
+                    </label>
+                  </div>
+                  <label className="block">
+                    <span className="text-[10px] text-stone-400 uppercase font-bold">Note for the customer (optional)</span>
+                    <input
+                      value={statusForm.note}
+                      maxLength={300}
+                      onChange={e => setStatusForm(f => ({ ...f, note: e.target.value }))}
+                      placeholder="e.g. Rider will call you this afternoon"
+                      className="mt-0.5 w-full border border-stone-300 rounded-lg px-2 py-1.5"
+                    />
+                  </label>
+                  <label className="flex items-center gap-2 text-stone-600">
+                    <input
+                      type="checkbox"
+                      checked={statusForm.notify}
+                      onChange={e => setStatusForm(f => ({ ...f, notify: e.target.checked }))}
+                    />
+                    <span>Email the customer about this update</span>
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      ['Packaging', 'bg-stone-200 hover:bg-stone-300 text-stone-700'],
+                      ['Out for Delivery', 'bg-amber-100 hover:bg-amber-200 text-amber-800'],
+                      ['Delivered', 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800'],
+                      ['Cancelled', 'bg-rose-100 hover:bg-rose-200 text-rose-800']
+                    ].map(([label, cls]) => (
+                      <button
+                        key={label}
+                        type="button"
+                        disabled={selectedOrder.status === label}
+                        onClick={() => {
+                          if (label === 'Cancelled' && !window.confirm(`Cancel order #${selectedOrder.id}? Stock will be returned.`)) return;
+                          handleUpdateStatus(selectedOrder.id, label);
+                        }}
+                        className={`px-3 py-1.5 rounded font-semibold cursor-pointer disabled:opacity-40 disabled:cursor-default ${cls}`}
+                      >
+                        {label === selectedOrder.status ? `${label} ✓` : `Mark ${label}`}
+                      </button>
+                    ))}
+                  </div>
+                  {(selectedOrder.courier || selectedOrder.trackingCode) && (
+                    <p className="text-[11px] text-stone-500">
+                      Saved: {selectedOrder.courier || 'no courier'}{selectedOrder.trackingCode ? ` · ${selectedOrder.trackingCode}` : ''}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Customer Info */}
               <div className="p-3.5 rounded-xl border border-stone-200 bg-white space-y-1">
                 <h4 className="font-bold text-stone-800 mb-2">Customer & Contact:</h4>
                 <p><strong>Name:</strong> {selectedOrder.customer?.name}</p>
-                <p><strong>Phone:</strong> <a href={`tel:${selectedOrder.customer?.phone}`} className="text-[#b07e15] font-bold">{selectedOrder.customer?.phone}</a></p>
+                <p><strong>Phone:</strong> <a href={`tel:${selectedOrder.customer?.phone}`} className="text-[#b07e15] font-bold">{selectedOrder.customer?.phone}</a>
+                  {' '}<a href={whatsappLink(selectedOrder)} target="_blank" rel="noopener noreferrer"
+                    className="ml-2 px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
+                    WhatsApp update
+                  </a>
+                </p>
+                <p><strong>Payment:</strong> {selectedOrder.paymentMethod} · {selectedOrder.paymentStatus || '-'}</p>
                 <p><strong>Email:</strong> <a href={`mailto:${selectedOrder.customer?.email}`} className="text-blue-600">{selectedOrder.customer?.email}</a></p>
                 <p><strong>Address:</strong> {selectedOrder.customer?.address}</p>
                 <p><strong>Region:</strong> {selectedOrder.customer?.city}</p>

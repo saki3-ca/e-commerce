@@ -105,9 +105,10 @@ export const api = {
   getOrder: id => request(`/orders/${encodeURIComponent(id)}`, { fallbackError: 'Order not found' }),
   createOrder: orderData =>
     request('/orders', { method: 'POST', json: orderData, fallbackError: 'Could not place your order' }),
-  updateOrderStatus: (id, status, note, courier) =>
+  updateOrderStatus: (id, status, note, courier, trackingCode, notify = true) =>
     request(`/orders/${encodeURIComponent(id)}/status`, {
-      method: 'PATCH', json: { status, note, courier }, fallbackError: 'Failed to update order status'
+      method: 'PATCH', json: { status, note, courier, trackingCode, notify },
+      fallbackError: 'Failed to update order status'
     }),
 
   // Emails & Settings

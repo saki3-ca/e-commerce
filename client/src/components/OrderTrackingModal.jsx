@@ -118,7 +118,7 @@ export default function OrderTrackingModal({ open, onClose, initialId = '' }) {
                 <p className="label text-muted">Delivery</p>
                 <p className="mt-3 text-ink-soft">{order.customer?.name}</p>
                 <p className="text-ink-soft">{order.customer?.address}{order.customer?.city ? `, ${order.customer.city}` : ''}</p>
-                {order.courier && <p className="mt-2 text-muted">Courier: {order.courier}</p>}
+                {(order.courier || order.trackingCode) && <p className="mt-2 text-muted">{order.courier ? `Courier: ${order.courier}` : ""}{order.trackingCode ? ` · Tracking code: ${order.trackingCode}` : ""}</p>}
               </div>
             </div>
           </div>

@@ -24,6 +24,22 @@ function getClient() {
   return getClient.client;
 }
 
+// Deployment env vars win over what is saved in the dashboard, so secrets such as the
+// SMTP password can live in Vercel instead of the database. Only non-empty vars apply.
+function envSettings() {
+  const e = process.env;
+  const map = {
+    smtpHost: e.SMTP_HOST, smtpUser: e.SMTP_USER, smtpPass: e.SMTP_PASS,
+    senderName: e.SMTP_SENDER_NAME, ownerEmail: e.OWNER_EMAIL, ownerPhone: e.OWNER_PHONE,
+    address: e.SHOP_ADDRESS, facebookUrl: e.FACEBOOK_URL, instagramUrl: e.INSTAGRAM_URL
+  };
+  const out = {};
+  for (const [k, v] of Object.entries(map)) if (v && v.trim()) out[k] = v.trim();
+  if (e.SMTP_PORT && Number(e.SMTP_PORT)) out.smtpPort = Number(e.SMTP_PORT);
+  if (e.SMTP_SECURE) out.smtpSecure = e.SMTP_SECURE.trim().toLowerCase() === 'true';
+  return out;
+}
+
 function check({ data, error }) {
   if (error) throw new Error(error.message);
   return data;
@@ -188,7 +204,7 @@ class Store {
     throw new Error('Could not allocate a unique order number, please retry.');
   }
 
-  async updateOrderStatus(id, newStatus, note, courier) {
+  async updateOrderStatus(id, newStatus, note, courier, extra = {}) {
     const order = await this.getOrderById(id);
     if (!order) return null;
     const timeline = [...(order.timeline || []), {
@@ -198,6 +214,8 @@ class Store {
     }];
     const patch = { status: newStatus, timeline };
     if (courier) patch.courier = courier;
+    if (extra.trackingCode) patch.tracking_code = extra.trackingCode;
+    if (extra.paymentStatus) patch.payment_status = extra.paymentStatus;
     return orderFromRow(check(await this.db.from('orders').update(patch).eq('id', order.id).select().single()));
   }
 
@@ -254,7 +272,7 @@ class Store {
   // ---------------- Settings ----------------
   async getSettings() {
     const row = check(await this.db.from('settings').select('data').eq('id', 1).maybeSingle());
-    return { ...DEFAULTS.settings, ...(row ? row.data : {}) };
+    return { ...DEFAULTS.settings, ...(row ? row.data : {}), ...envSettings() };
   }
 
   async updateSettings(updates) {

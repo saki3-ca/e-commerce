@@ -581,17 +581,26 @@ app.post('/api/orders', h(async (req, res) => {
   }
 }));
 
+const ORDER_STATUSES = ['Pending', 'Accepted', 'Packaging', 'Out for Delivery', 'Delivered', 'Cancelled'];
+const NOTIFY_STATUSES = ['Packaging', 'Out for Delivery', 'Delivered', 'Cancelled'];
+
 app.patch('/api/orders/:id/status', auth.requireAdmin, h(async (req, res) => {
-  const { status, note, courier } = req.body;
-  if (!status) return res.status(400).json({ error: 'Status is required' });
+  const { status, note, courier, trackingCode, notify } = req.body || {};
+  const matched = ORDER_STATUSES.find(s => s.toLowerCase() === String(status || '').trim().toLowerCase());
+  if (!matched) return res.status(400).json({ error: `Status must be one of: ${ORDER_STATUSES.join(', ')}` });
+  const clean = (v, max) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : undefined);
 
   const before = await store.getOrderById(req.params.id);
   if (!before) return res.status(404).json({ error: 'Order not found' });
-  const order = await store.updateOrderStatus(before.id, status, note, courier);
+
+  const extra = { trackingCode: clean(trackingCode, 60) };
+  // Cash is collected on delivery; mobile-banking payments were already verified by staff
+  if (matched === 'Delivered' && !/^paid/i.test(before.paymentStatus || '')) extra.paymentStatus = 'Paid';
+  const order = await store.updateOrderStatus(before.id, matched, clean(note, 300), clean(courier, 60), extra);
 
   // Put stock back when an order is cancelled (and take it again if it is revived)
   const wasCancelled = before.status === 'Cancelled';
-  const isCancelled = status === 'Cancelled';
+  const isCancelled = matched === 'Cancelled';
   const stockItems = (order.items || []).map(i => ({ id: i.id, quantity: Number(i.quantity) || 0 }))
     .filter(i => i.quantity > 0);
   if (!wasCancelled && isCancelled) {
@@ -600,15 +609,25 @@ app.patch('/api/orders/:id/status', auth.requireAdmin, h(async (req, res) => {
     await store.reserveStock(stockItems).catch(e => console.error('Re-reserve failed:', e));
   }
 
-  if (['accepted', 'accept'].includes(status.toLowerCase()) && order.customer && order.customer.email) {
-    await emailService.sendOrderAcceptedNotificationToCustomer(order)
-      .catch(err => console.error('Failed to send order accepted email:', err));
+  // Tell the shopper about every step (the owner can switch it off per update with notify: false)
+  let emailed = false;
+  const to = order.customer && order.customer.email;
+  const shouldMail = matched === 'Accepted' || NOTIFY_STATUSES.includes(matched);
+  if (to && notify !== false && shouldMail && matched !== before.status) {
+    try {
+      if (matched === 'Accepted') await emailService.sendOrderAcceptedNotificationToCustomer(order);
+      else await emailService.sendOrderStatusUpdateToCustomer(order, clean(note, 300));
+      emailed = true;
+    } catch (err) {
+      console.error('Failed to send status email:', err);
+    }
   }
 
   res.json({
     success: true,
     order,
-    message: `Order status updated to "${status}". Customer notification dispatched!`
+    emailed,
+    message: `Order status updated to "${matched}".${emailed ? ' Customer notified by email.' : ''}`
   });
 }));
 
