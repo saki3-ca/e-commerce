@@ -270,15 +270,24 @@ class Store {
   }
 
   // ---------------- Settings ----------------
-  async getSettings() {
+  // What is saved in the database only (never includes env overrides)
+  async getStoredSettings() {
     const row = check(await this.db.from('settings').select('data').eq('id', 1).maybeSingle());
-    return { ...DEFAULTS.settings, ...(row ? row.data : {}), ...envSettings() };
+    return { ...DEFAULTS.settings, ...(row ? row.data : {}) };
+  }
+
+  // Effective settings: stored values with deployment env vars on top
+  async getSettings() {
+    return { ...(await this.getStoredSettings()), ...envSettings() };
   }
 
   async updateSettings(updates) {
-    const merged = { ...(await this.getSettings()), ...updates };
+    // Never write env-controlled values (e.g. the SMTP password) into the database
+    const clean = { ...updates };
+    for (const k of Object.keys(envSettings())) delete clean[k];
+    const merged = { ...(await this.getStoredSettings()), ...clean };
     check(await this.db.from('settings').upsert({ id: 1, data: merged, updated_at: new Date().toISOString() }));
-    return merged;
+    return { ...merged, ...envSettings() };
   }
 
   // ---------------- Email log ----------------
